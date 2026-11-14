@@ -7,8 +7,10 @@ export const isSupabaseConfigured = () => {
   return Boolean(
     supabaseUrl && 
     supabaseAnonKey && 
-    supabaseUrl !== 'https://your-project.supabase.co' && 
-    supabaseAnonKey !== 'your-anon-key-here'
+    !supabaseUrl.includes('your-project') && 
+    !supabaseUrl.includes('placeholder') &&
+    !supabaseAnonKey.includes('your-') &&
+    !supabaseAnonKey.includes('placeholder')
   );
 };
 

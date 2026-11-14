@@ -19,7 +19,8 @@ import {
   Lock,
   Check,
   MapPin,
-  User
+  User,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './ProfileDrawer.css';
@@ -31,8 +32,9 @@ export default function ProfileDrawer({
   onOpenShortcuts,
   onOpenStudyBook,
   onOpenRedeemStore,
+  onOpenSmartStudy,
 }) {
-  const { user, logout, updateUser, saveProfileDetails, resetStats } = useAuth();
+  const { user, logout, updateUser, updateRole, saveProfileDetails, resetStats } = useAuth();
   const [goal, setGoal] = useState(user?.dailyGoal ?? 100);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -228,6 +230,32 @@ export default function ProfileDrawer({
               <Pencil size={13} />
               <span>{isEditing ? 'Close' : 'Edit'}</span>
             </button>
+          </div>
+
+          {/* USER WORKSPACE ROLE SWITCHER (Teacher vs Student) */}
+          <div className="drawer-role-card">
+            <div className="drawer-role-header">
+              <span className="drawer-role-title">WORKSPACE ROLE</span>
+              <span className="drawer-role-badge">
+                {user?.role === 'teacher' ? '👨‍🏫 Teacher' : '🎓 Student'}
+              </span>
+            </div>
+            <div className="drawer-role-btn-group">
+              <button
+                type="button"
+                className={`drawer-role-toggle-btn ${user?.role === 'teacher' ? 'active' : ''}`}
+                onClick={() => updateRole?.('teacher')}
+              >
+                👨‍🏫 Teacher Mode
+              </button>
+              <button
+                type="button"
+                className={`drawer-role-toggle-btn ${user?.role === 'student' ? 'active' : ''}`}
+                onClick={() => updateRole?.('student')}
+              >
+                🎓 Student Mode
+              </button>
+            </div>
           </div>
 
           {/* EDIT PROFILE FORM */}
@@ -535,6 +563,27 @@ export default function ProfileDrawer({
           {/* Navigation & Actions Section */}
           <div className="drawer-section">
             <span className="drawer-section-title">Cognitive Performance & Learning</span>
+
+            {/* Smart Study Hub & MCQ Practice */}
+            <button
+              className="drawer-menu-item"
+              onClick={() => {
+                onClose();
+                onOpenSmartStudy?.();
+              }}
+              id="drawer-smart-study-btn"
+            >
+              <div className="drawer-menu-left">
+                <div className="menu-icon-box" style={{ background: 'rgba(255, 149, 0, 0.12)', color: '#FF9500' }}>
+                  <Zap size={18} />
+                </div>
+                <div className="menu-text">
+                  <span className="menu-title">Smart Study Hub &amp; MCQ Practice</span>
+                  <span className="menu-subtitle">AI MCQs (10–15 Qs) • Cheatsheets • Flashcards • Mind Map</span>
+                </div>
+              </div>
+              <ChevronRight size={18} className="menu-chevron" />
+            </button>
 
             {/* Study Handbook (Pure Learning, Zero XP) */}
             <button

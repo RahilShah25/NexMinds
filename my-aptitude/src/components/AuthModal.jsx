@@ -123,7 +123,7 @@ function OnboardingCarousel({ onDone, onSkip }) {
 
 /* ── 100% Fast Login Component (No Email / No Password) ── */
 function FastLoginForm({ onSuccess }) {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, continueAsGuest } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -133,6 +133,7 @@ function FastLoginForm({ onSuccess }) {
       setErrorMsg('');
       const res = await loginWithGoogle();
       if (res && res.user) {
+        res.user.role = selectedRole;
         onSuccess(res.user);
       }
     } catch (err) {
@@ -143,6 +144,12 @@ function FastLoginForm({ onSuccess }) {
     }
   };
 
+  const handleGuestLogin = () => {
+    const guest = continueAsGuest();
+    guest.role = selectedRole;
+    onSuccess(guest);
+  };
+
   return (
     <div className="fast-auth-container" aria-label="Sign In">
       <div className="auth-form-header">
@@ -150,7 +157,7 @@ function FastLoginForm({ onSuccess }) {
           <Brain size={26} strokeWidth={2.5} />
         </div>
         <h2 className="auth-form-title">Welcome to MyAptitude</h2>
-        <p className="auth-form-subtitle">Instant, passwordless sign-in with your Google account</p>
+        <p className="auth-form-subtitle">Choose how you'd like to access your learning dashboard</p>
       </div>
 
       {/* Benefits checklist */}
@@ -207,6 +214,18 @@ function FastLoginForm({ onSuccess }) {
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
         </svg>
         <span>{loading ? 'Connecting with Google...' : 'Continue with Google'}</span>
+      </button>
+
+      {/* Guest Fallback */}
+      <button
+        type="button"
+        id="guest-fast-login-btn"
+        className="btn btn-secondary w-full"
+        style={{ marginTop: '0.625rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+        onClick={handleGuestLogin}
+      >
+        <Sparkles size={16} className="text-lime" />
+        <span>Continue as Guest (Instant Access)</span>
       </button>
 
       <p className="fast-auth-footnote">

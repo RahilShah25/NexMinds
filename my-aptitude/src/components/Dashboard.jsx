@@ -18,7 +18,9 @@ import {
   BookOpen,
   Trophy,
   Sun,
-  Moon
+  Moon,
+  FileUp,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -29,6 +31,7 @@ import ShortcutsModal from './ShortcutsModal';
 import QuizScreen from './QuizScreen';
 import RedeemStore from './RedeemStore';
 import StudyBook from './StudyBook';
+import DocumentStudyTool from './DocumentStudyTool';
 import Footer from './Footer';
 import RankInfoModal from './RankInfoModal';
 import PeerProfileModal from './PeerProfileModal';
@@ -151,7 +154,7 @@ function getWeeklySummary(user) {
 }
 
 export default function Dashboard() {
-  const { user, theme, toggleTheme } = useAuth();
+  const { user, theme, toggleTheme, updateRole } = useAuth();
   const weeklySummary = getWeeklySummary(user);
 
   // Modals & Drawers
@@ -162,7 +165,7 @@ export default function Dashboard() {
   const [rankInfoModalOpen, setRankInfoModalOpen] = useState(false);
   const [rankInfoInitialTab, setRankInfoInitialTab] = useState('rank');
   const [quizConfig, setQuizConfig] = useState(null); // active quiz session
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'redeem' | 'study'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'redeem' | 'study' | 'smartstudy'
   const [activeRatingCatId, setActiveRatingCatId] = useState(null); // No rating card pre-selected on page load
   const [selectedPeer, setSelectedPeer] = useState(null); // Selected contender profile for XP & stats modal
 
@@ -345,6 +348,15 @@ export default function Dashboard() {
   if (activeView === 'study') {
     return (
       <StudyBook
+        onBack={() => setActiveView('dashboard')}
+      />
+    );
+  }
+
+  // If viewing the Smart Study Hub (Document upload + AI study tools)
+  if (activeView === 'smartstudy') {
+    return (
+      <DocumentStudyTool
         onBack={() => setActiveView('dashboard')}
       />
     );
@@ -1229,6 +1241,62 @@ export default function Dashboard() {
               </div>
             </section>
 
+            {/* SMART STUDY HUB CARD */}
+            <section className="matiks-section" aria-label="Smart Study Hub">
+              <div
+                className="smart-study-hub-card"
+                onClick={() => setActiveView('smartstudy')}
+                role="button"
+                tabIndex={0}
+                id="smart-study-hub-btn"
+              >
+                <div className="ssh-card-glow" />
+                <div className="ssh-card-header">
+                  <div className="ssh-badge">
+                    <FileUp size={13} className="text-blue" />
+                    <span>SMART STUDY HUB</span>
+                  </div>
+                  <span className="ssh-count-pill">4 Study Tools</span>
+                </div>
+                <div className="ssh-card-body">
+                  <h3 className="ssh-main-title">Upload &amp; Study Smarter</h3>
+                  <p className="ssh-main-sub">
+                    Upload any PDF, DOCX, or PPTX and instantly generate MCQs, Cheatsheets, Flashcards, and Mind Maps powered by AI.
+                  </p>
+                  <div className="ssh-tools-row">
+                    <span className="ssh-tool-chip">🎯 MCQ Practice</span>
+                    <span className="ssh-tool-chip">📋 Cheatsheet</span>
+                    <span className="ssh-tool-chip">🧠 Flashcards</span>
+                    <span className="ssh-tool-chip">🗺️ Mind Map</span>
+                  </div>
+                </div>
+                <div className="ssh-card-footer">
+                  <button
+                    type="button"
+                    className="ssh-mcq-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveView('smartstudy');
+                    }}
+                    title="Launch MCQ Practice with 10-15 Questions"
+                  >
+                    <span>🎯 MCQ Practice (10–15 Qs)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="ssh-open-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveView('smartstudy');
+                    }}
+                  >
+                    <span>Open Study Hub</span>
+                    <ArrowUpRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </section>
+
             {/* REDEEM XP REWARDS STORE SHOWCASE CARD (Below Velocity Chart) */}
             <section className="matiks-section" aria-label="Redeem XP Store">
               <div
@@ -1326,6 +1394,10 @@ export default function Dashboard() {
         onOpenRedeemStore={() => {
           setProfileDrawerOpen(false);
           setActiveView('redeem');
+        }}
+        onOpenSmartStudy={() => {
+          setProfileDrawerOpen(false);
+          setActiveView('smartstudy');
         }}
       />
 

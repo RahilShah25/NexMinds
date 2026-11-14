@@ -1427,6 +1427,165 @@
 }
 
 /* ============================================================
+   SMART STUDY HUB CARD (Above Redeem XP Card)
+   ============================================================ */
+.smart-study-hub-card {
+  position: relative;
+  background: linear-gradient(135deg, #0F1A28 0%, #0A1220 100%);
+  border: 1px solid #1A2E42;
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.smart-study-hub-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 14px 30px -8px rgba(0,0,0,0.6), 0 0 24px -6px rgba(56,189,248,0.2);
+}
+
+.ssh-card-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ssh-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ssh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #38BDF8;
+  background: rgba(56,189,248,0.1);
+  border: 1px solid rgba(56,189,248,0.25);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.ssh-count-pill {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #787085;
+  background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.15);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.ssh-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssh-main-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ssh-main-sub {
+  font-size: 0.8125rem;
+  color: #9E9AA8;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.ssh-tools-row {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.ssh-tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.2);
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #38BDF8;
+}
+
+.ssh-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #1A2E42;
+  flex-wrap: wrap;
+}
+
+.ssh-mcq-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #FF9500, #EA580C);
+  border: none;
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 11px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 14px -4px #FF9500;
+}
+.ssh-mcq-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.ssh-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #38BDF8, #0EA5E9);
+  border: none;
+  color: #0A0A0A;
+  padding: 9px 18px;
+  border-radius: 11px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 14px -4px #38BDF8;
+}
+
+.ssh-open-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
    REDEEM XP SHOWCASE CARD & BANNER (Under Numerical Velocity)
    ============================================================ */
 

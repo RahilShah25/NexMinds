@@ -39,6 +39,7 @@ function loadPersistedUser() {
       }
       parsed.ratings = { ...DEFAULT_RATINGS, ...(parsed.ratings || {}) };
       parsed.ratingTrends = { ...DEFAULT_TRENDS, ...(parsed.ratingTrends || {}) };
+      parsed.role = parsed.role || localStorage.getItem('myaptitude_selected_role') || 'student';
     }
     return parsed;
   } catch {
@@ -392,6 +393,7 @@ export function AuthProvider({ children }) {
       id: `guest-${Date.now()}`,
       name: 'Guest Thinker',
       email: null,
+      role: localStorage.getItem('myaptitude_selected_role') || 'student',
       xp: 0,
       level: 1,
       streak: 0,
@@ -410,6 +412,13 @@ export function AuthProvider({ children }) {
     setUser(guest);
     setIsGuest(true);
     return guest;
+  };
+
+  const updateRole = (newRole) => {
+    try {
+      localStorage.setItem('myaptitude_selected_role', newRole);
+    } catch {}
+    setUser((prev) => (prev ? { ...prev, role: newRole } : null));
   };
 
   const updateUser = (updates) => {
@@ -744,6 +753,7 @@ export function AuthProvider({ children }) {
         loginWithGoogle,
         continueAsGuest,
         updateUser,
+        updateRole,
         saveProfileDetails,
         addXP,
         deductXP,

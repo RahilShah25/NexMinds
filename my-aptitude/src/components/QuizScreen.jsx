@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { shuffleQuestionOptions } from '../lib/studyToolsAI';
 import './QuizScreen.css';
 
 /* ─── Confetti Particle Canvas ──────────────────────────────── */
@@ -174,7 +175,7 @@ export default function QuizScreen({ config = {}, onComplete }) {
       : (QUESTIONS.math || []);
   };
 
-  const [questions, setQuestions] = useState(() => getInitialQuestions(category));
+  const [questions, setQuestions] = useState(() => shuffleQuestionOptions(getInitialQuestions(category)));
   const [isDbQuestion, setIsDbQuestion] = useState(false);
   const xpAwardedRef = useRef(false);
 
@@ -227,8 +228,8 @@ export default function QuizScreen({ config = {}, onComplete }) {
             .filter(item => item.q && Array.isArray(item.options) && item.options.length >= 2);
 
           if (parsed.length > 0 && isMounted) {
-            // Randomize and select 5 questions
-            const shuffled = [...parsed].sort(() => 0.5 - Math.random()).slice(0, 5);
+            // Randomize and select 5 questions with shuffled options
+            const shuffled = shuffleQuestionOptions([...parsed].sort(() => 0.5 - Math.random()).slice(0, 5));
             setQuestions(prev => {
               // Only swap if quiz hasn't progressed to answer stage
               return (qIndex === 0 && selected === null) ? shuffled : prev;

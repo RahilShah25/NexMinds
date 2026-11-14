@@ -10,8 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@rolldown/binding-win32-x64-msvc": "^1.2.15",
     "@supabase/supabase-js": "^2.117.3",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.55.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^5.4.624",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
