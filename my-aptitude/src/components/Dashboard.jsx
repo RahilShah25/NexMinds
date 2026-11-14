@@ -119,7 +119,7 @@ function getWeeklySummary(user) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') weeklyMap = parsed;
       }
-    } catch {}
+    } catch { }
   }
 
   const streak = Number(user?.streak) || 0;
@@ -504,9 +504,9 @@ export default function Dashboard() {
               >
                 <div className="avatar-circle">
                   {user?.avatar && user.avatar.startsWith('http') ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={userName} 
+                    <img
+                      src={user.avatar}
+                      alt={userName}
                       className="header-avatar-img"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
@@ -536,22 +536,7 @@ export default function Dashboard() {
         <section className="matiks-stories-section" aria-label="Contenders and Daily Event">
           <div className="matiks-stories-row">
             {/* Daily Event Glowing Circle */}
-            <div
-              className="story-circle-item event-story"
-              onClick={() => openPractice('puzzle', true)}
-              role="button"
-              tabIndex={0}
-            >
-              <div className="event-ring-outer">
-                <div className="event-ring-inner">
-                  <span className="event-bold-text">5 IN 02</span>
-                  <span className="event-sub-tag">STARTS IN</span>
-                </div>
-              </div>
-              <span className="story-label text-lime">
-                {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')} HRS
-              </span>
-            </div>
+
 
             {/* User Profile Circle */}
             <div
@@ -590,9 +575,9 @@ export default function Dashboard() {
               >
                 <div className="friend-ring-circle">
                   {peer.avatar && peer.avatar.startsWith('http') ? (
-                    <img 
-                      src={peer.avatar} 
-                      alt={peer.name} 
+                    <img
+                      src={peer.avatar}
+                      alt={peer.name}
                       className="friend-avatar-img"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
@@ -742,7 +727,7 @@ export default function Dashboard() {
                 {rankingList.length >= 3 ? (
                   <div className="leaderboard-podium-row podium-grid-3">
                     {/* #2 Rank */}
-                    <div 
+                    <div
                       className={`podium-card podium-2 ${rankingList[1].isYou ? 'podium-card--you' : ''}`}
                       onClick={() => {
                         if (rankingList[1].isYou) setProfileDrawerOpen(true);
@@ -766,7 +751,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* #1 Rank (Center) */}
-                    <div 
+                    <div
                       className={`podium-card podium-1 ${rankingList[0].isYou ? 'podium-card--you' : ''}`}
                       onClick={() => {
                         if (rankingList[0].isYou) setProfileDrawerOpen(true);
@@ -790,7 +775,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* #3 Rank */}
-                    <div 
+                    <div
                       className={`podium-card podium-3 ${rankingList[2].isYou ? 'podium-card--you' : ''}`}
                       onClick={() => {
                         if (rankingList[2].isYou) setProfileDrawerOpen(true);
