@@ -124,7 +124,14 @@ export default function DocumentStudyTool({ onBack }) {
       setPhase('tools');
     } catch (err) {
       console.error('[DocumentStudyTool] Parse error:', err);
-      setError(err.message || 'Failed to extract text from file. Please ensure it contains selectable text.');
+      const rawMsg = err?.message || '';
+      let userMsg = rawMsg;
+      if (rawMsg.includes('toHex') || rawMsg.includes('worker') || rawMsg.includes('getDocument')) {
+        userMsg = 'Unable to decode PDF. Please ensure the PDF is valid and not password-protected.';
+      } else if (!userMsg) {
+        userMsg = 'Failed to extract text from file. Please ensure it contains readable text or clear diagrams.';
+      }
+      setError(userMsg);
       setPhase('upload');
     }
   }, []);

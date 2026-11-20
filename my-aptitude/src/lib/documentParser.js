@@ -9,6 +9,38 @@ import JSZip from 'jszip';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ocrMediaWithGemini, analyzeDiagramWithGemini } from './studyToolsAI.js';
 
+// ─── TC39 Uint8Array toHex Polyfill for PDF.js & universal browser compatibility ───
+if (typeof Uint8Array !== 'undefined') {
+  if (!('toHex' in Uint8Array.prototype)) {
+    Object.defineProperty(Uint8Array.prototype, 'toHex', {
+      value: function() {
+        var hex = '';
+        for (var i = 0; i < this.length; i++) {
+          var b = this[i].toString(16);
+          hex += b.length === 1 ? '0' + b : b;
+        }
+        return hex;
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+  if (!('fromHex' in Uint8Array)) {
+    Object.defineProperty(Uint8Array, 'fromHex', {
+      value: function(hexStr) {
+        var clean = (hexStr || '').replace(/[^0-9a-fA-F]/g, '');
+        var bytes = new Uint8Array(Math.floor(clean.length / 2));
+        for (var i = 0; i < bytes.length; i++) {
+          bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+        }
+        return bytes;
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+}
+
 // ─── Base64 & Canvas Helpers ──────────────────────────────────────────────────
 function arrayBufferToBase64(buffer) {
   let binary = '';
@@ -57,27 +89,32 @@ export function sanitizeDocumentText(text) {
   if (!text) return '';
 
   return text
-    // 1. Remove Textbook, Reference Books, Suggested Readings & Bibliography sections
-    .replace(/^[^\n]*(?:Text\s*Book(?:s)?|Reference\s*Book(?:s)?|Books?\s*Recommended|Suggested\s*Reading(?:s)?|Bibliography|Recommended\s*Books?|Reference(?:s)?:)[^\n]*$/gim, '')
-    // 2. Remove Common Textbook Publishers, Editions & ISBN references
-    .replace(/^[^\n]*(?:Pearson|McGraw[- ]Hill|Wiley|Prentice[- ]Hall|O'Reilly|Oxford\s+University\s+Press|Cambridge\s+University\s+Press|Springer|Cengage|Tata\s+McGraw|PHI\s+Learning|S\.\s*Chand|ISBN\s*[:\-]?[0-9\-xX]+|\b\d{1,2}(?:st|nd|rd|th)?\s+Edition\b)[^\n]*$/gim, '')
-    // 3. Remove Famous textbook author citations often found in syllabus & references
-    .replace(/^[^\n]*(?:Silberschatz|Galvin|Gagne|Tanenbaum|Kurose|Ross|Cormen|Leiserson|Rivest|Stein|Pressman|Sommerville|Stallings|Forouzan|Korth|Navathe|Elmasri|Sedgewick|Aho|Ullman|Hopcroft|Patterson|Hennessy|Russell|Norvig|Boylestad|Hayt|Kemmerly|Theraja)[^\n]*$/gim, '')
-    // 4. Remove Course Code, Course Title, Subject Name & Department administrative metadata
-    .replace(/^[^\n]*(?:Course\s+Code\s*:|Subject\s+Code\s*:|Paper\s+Code\s*:|Sub\s+Code\s*:|Course\s+Name\s*:|Course\s+Title\s*:|Subject\s+Name\s*:|Subject\s*:\s*[A-Z0-9\s]{3,30}|Name\s+of\s+the\s+Course\s*:|Branch\s*:|Discipline\s*:|Regulation\s*:|Scheme\s*:|Academic\s+Year\s*:|Semester\s*:\s*[IVX\d]+|Credits\s*:\s*\d|L[- ]?T[- ]?P\s*:|\b(?:21CS\d{2}|CS\d{3}|BCS\d{3}|EC\d{3}|ME\d{3})\b)[^\n]*$/gim, '')
-    // 5. Remove University / College / Department headers & grading boilerplate
-    .replace(/^[^\n]*(?:Institute of Technology|College of Engineering|University|Department of|Affiliated to|Autonomous|Accredited by|Internal Assessment|End Semester Exam|Mid Term Exam|Question Paper Code)[^\n]*$/gim, '')
-    // 6. Remove Exam & Syllabus administrative metadata
-    .replace(/^[^\n]*(?:Duration\s*:\s*\d|Max(?:\.|\s+)?Marks\s*:\s*\d|Reg(?:\.|\s+)?No|Roll\s+No|USN\s*:)[^\n]*$/gim, '')
-    // 7. Remove Teacher / Faculty / Author names
+    // 1. Remove Slide titles, numbers, headers, and footer markers (e.g. "[Slide 1 of 20]", "Slide 4: Intro", "Page 2 of 10")
+    .replace(/^\[Slide\s+\d+[^\]]*\](?::\s*[^\n]*)?$/gim, '')
+    .replace(/^[^\n]*\b(?:Slide|Slide\s*No\.?|Slide\s*Number|Slide\s+\d+|Page\s+\d+)(?:\s*(?:of|-)\s*\d+)?\b(?::\s*[^\n]*)?$/gim, '')
+    // 2. Remove Dates & Academic session stamps (e.g. "Date: 12/04/2024", "Jan 15, 2024", "2023-2024")
+    .replace(/^[^\n]*(?:Date\s*:\s*|\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}|\b(?:19|20)\d{2}[-/]\d{2,4}\b)[^\n]*$/gim, '')
+    // 3. Remove Course Code, Course Title, Subject Name & Department administrative metadata
+    .replace(/^[^\n]*(?:Course\s+Code\s*:|Subject\s+Code\s*:|Paper\s+Code\s*:|Sub\s+Code\s*:|Course\s+Name\s*:|Course\s+Title\s*:|Subject\s+Name\s*:|Subject\s*:\s*[A-Z0-9\s]{3,30}|Name\s+of\s+the\s+Course\s*:|Branch\s*:|Discipline\s*:|Regulation\s*:|Scheme\s*:|Academic\s+Year\s*:|Semester\s*:\s*[IVX\d]+|Credits\s*:\s*\d|L[- ]?T[- ]?P\s*:|\b(?:21CS\d{2}|CS\d{3}|BCS\d{3}|EC\d{3}|ME\d{3}|IT\d{3})\b)[^\n]*$/gim, '')
+    // 4. Remove Teacher / Faculty / Professor / Author / Guide names
     .replace(/^[^\n]*(?:Prepared\s+by|Faculty\s+Name|Faculty\s*:|Instructor\s*:|Lecturer\s*:|Course\s+Instructor|Authored\s+by|Written\s+by|Presented\s+by|Author\s*:|Teacher\s*:|Guide\s*:|Mentor\s*:|HOD\s*:|Dean\s*:|Prof\.|Professor|Dr\.)\s+[A-Za-z\.\s]{2,40}[^\n]*$/gim, '')
-    // 8. Remove Course Outcomes (CO) & Program Outcomes (PO) tables & statements
-    .replace(/^[^\n]*(?:Course\s+Outcome|Program\s+Outcome|Course\s+Objective|Program\s+Specific\s+Outcome|CO[-_ ]?[1-9]|PO[-_ ]?[1-9]|PSO[-_ ]?[1-9]|Bloom(?:'s)?\s+Taxonomy|Bloom\s+Level|CO-PO\s+Mapping|Learning\s+Outcome)[^\n]*$/gim, '')
-    // 9. Remove standalone Chapter / Unit / Module markers (e.g. "CHAPTER 1", "UNIT - II", "MODULE 3")
+    // 5. Remove Chapter / Unit / Module markers and titles (e.g. "CHAPTER 1: Introduction", "UNIT - II", "MODULE 3")
     .replace(/^[ \t]*(?:Chapter|Chp|Unit|Module|Section)\s*[-_:]?\s*[0-9IVXLCDM]+(?:\s*[-:]\s*[^\n]*)?$/gim, '')
-    // 10. Remove Copyright and publisher notices
+    // 6. Remove Textbook, Reference Books, Suggested Readings & Bibliography sections
+    .replace(/^[^\n]*(?:Text\s*Book(?:s)?|Reference\s*Book(?:s)?|Books?\s*Recommended|Suggested\s*Reading(?:s)?|Bibliography|Recommended\s*Books?|Reference(?:s)?:)[^\n]*$/gim, '')
+    // 7. Remove Common Textbook Publishers, Editions & ISBN references
+    .replace(/^[^\n]*(?:Pearson|McGraw[- ]Hill|Wiley|Prentice[- ]Hall|O'Reilly|Oxford\s+University\s+Press|Cambridge\s+University\s+Press|Springer|Cengage|Tata\s+McGraw|PHI\s+Learning|S\.\s*Chand|ISBN\s*[:\-]?[0-9\-xX]+|\b\d{1,2}(?:st|nd|rd|th)?\s+Edition\b)[^\n]*$/gim, '')
+    // 8. Remove Famous textbook author citations often found in syllabus & references
+    .replace(/^[^\n]*(?:Silberschatz|Galvin|Gagne|Tanenbaum|Kurose|Ross|Cormen|Leiserson|Rivest|Stein|Pressman|Sommerville|Stallings|Forouzan|Korth|Navathe|Elmasri|Sedgewick|Aho|Ullman|Hopcroft|Patterson|Hennessy|Russell|Norvig|Boylestad|Hayt|Kemmerly|Theraja)[^\n]*$/gim, '')
+    // 9. Remove University / College / Department headers & grading boilerplate
+    .replace(/^[^\n]*(?:Institute of Technology|College of Engineering|University|Department of|Affiliated to|Autonomous|Accredited by|Internal Assessment|End Semester Exam|Mid Term Exam|Question Paper Code)[^\n]*$/gim, '')
+    // 10. Remove Exam & Syllabus administrative metadata
+    .replace(/^[^\n]*(?:Duration\s*:\s*\d|Max(?:\.|\s+)?Marks\s*:\s*\d|Reg(?:\.|\s+)?No|Roll\s+No|USN\s*:)[^\n]*$/gim, '')
+    // 11. Remove Course Outcomes (CO) & Program Outcomes (PO) tables & statements
+    .replace(/^[^\n]*(?:Course\s+Outcome|Program\s+Outcome|Course\s+Objective|Program\s+Specific\s+Outcome|CO[-_ ]?[1-9]|PO[-_ ]?[1-9]|PSO[-_ ]?[1-9]|Bloom(?:'s)?\s+Taxonomy|Bloom\s+Level|CO-PO\s+Mapping|Learning\s+Outcome)[^\n]*$/gim, '')
+    // 12. Remove Copyright and publisher notices
     .replace(/^[^\n]*(?:©|Copyright|All\s+rights\s+reserved|Printed\s+in|Published\s+by|www\.[a-z0-9\.\-]+\.[a-z]{2,})[^\n]*$/gim, '')
-    // 11. Clean up excessive blank lines
+    // 13. Clean up excessive blank lines
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

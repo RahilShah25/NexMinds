@@ -434,22 +434,28 @@ export function safeParseJSON(raw) {
 }
 
 // ─── Academic Noise & Metadata Deep Scrubber ─────────────────────────────────
-// Removes leaked mentions of books, authors, teachers, course codes, and chapter banners from text.
+// Removes leaked mentions of books, authors, teachers, course codes, slide labels, dates, and chapter banners from text.
 export function cleanAcademicText(str) {
   if (!str || typeof str !== 'string') return '';
   return str
+    // Remove references to slides / pages (e.g. "on Slide 4", "according to Slide 12", "Page 5")
+    .replace(/\b(?:as shown in|refer to|in|on|from|according to|per)?\s*(?:Slide|Slide\s*No\.?|Slide\s*Number|Page|Page\s*No\.?)\s*#?\d+(?:\s*(?:of|-)\s*\d+)?\b[:\s-]*/gi, '')
+    // Remove date stamps & academic years (e.g. "12/04/2024", "Jan 15, 2024", "2023-2024")
+    .replace(/\b(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}|\b(?:19|20)\d{2}[-/]\d{2,4}\b)\b/gi, '')
     // Remove references to chapters/units (e.g. "as discussed in Chapter 3", "in Unit II")
-    .replace(/\b(?:as discussed in|refer to|in)\s+(?:Chapter|Chp|Unit|Module)\s*[-_:]?\s*[0-9IVXLCDM]+\b/gi, '')
+    .replace(/\b(?:as discussed in|refer to|in|from|per)\s+(?:Chapter|Chp|Unit|Module)\s*[-_:]?\s*[0-9IVXLCDM]+\b/gi, '')
     // Remove standalone Chapter/Module prefixes
     .replace(/\b(?:Chapter|Chp|Unit|Module|Section)\s*[-_:]?\s*[0-9IVXLCDM]+[:\s-]*/gi, '')
     // Remove CO/PO tags
     .replace(/\b(?:CO|PO|PSO|LO)\s*[-_:]?\s*[1-9]\b[:\s-]*/gi, '')
-    // Remove "according to / as per Prof./Dr./Author"
+    // Remove faculty / teacher / instructor mentions
     .replace(/\b(?:according to|as defined by|as per|per|by)\s+(?:(?:Prof\.|Professor|Dr\.)\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:,\s*)?/gi, '')
+    .replace(/\b(?:Prof\.|Professor|Dr\.)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/gi, '')
     // Remove textbook authors
     .replace(/\b(?:Silberschatz|Galvin|Gagne|Tanenbaum|Kurose|Ross|Cormen|Leiserson|Rivest|Stein|Pressman|Sommerville|Stallings|Forouzan|Korth|Navathe|Elmasri|Sedgewick|Aho|Ullman|Hopcroft|Patterson|Hennessy|Russell|Norvig)\b(?:(?:\s+et\s+al\.?)|\b)/gi, '')
-    // Remove Course Code / Name tags
-    .replace(/\b(?:Course\s+Code|Subject\s+Code|Course\s+Name|Subject\s+Name)\s*:\s*[A-Z0-9\-_\s]{2,30}/gi, '')
+    // Remove Course Code / Name tags & codes
+    .replace(/\b(?:Course\s+Code|Subject\s+Code|Course\s+Name|Subject\s+Name|Paper\s+Code)\s*:\s*[A-Z0-9\-_\s]{2,30}/gi, '')
+    .replace(/\b(?:21CS\d{2}|CS\d{3}|BCS\d{3}|EC\d{3}|ME\d{3}|IT\d{3})\b/gi, '')
     // Remove leftover empty parentheses or brackets
     .replace(/\(\s*\)|\[\s*\]/g, '')
     // Clean up excessive whitespace and orphan commas
@@ -460,20 +466,23 @@ export function cleanAcademicText(str) {
 }
 
 // ─── Topic & Label Sanitizer ──────────────────────────────────────────────────
-// Ensures topic pills and categories never output chapter numbers, COs, teacher names, book names, etc.
+// Ensures topic pills and categories never output chapter numbers, slide tags, COs, teacher names, book names, etc.
 export function sanitizeTopic(topic, fallbackText = '') {
   if (!topic) return 'Core Concept';
   let clean = String(topic)
+    .replace(/\b(?:Slide|Slide\s*No\.?|Page)\s*#?\d+(?:\s*(?:of|-)\s*\d+)?\b/gi, '')
+    .replace(/\b(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|(?:19|20)\d{2}[-/]\d{2,4})\b/gi, '')
     .replace(/\b(?:Chapter|Chp|Unit|Module|Section)\s*[-_:]?\s*[0-9IVXLCDM]+\s*[-:]?\s*/gi, '')
     .replace(/\b(?:CO|PO|PSO|LO)\s*[-_:]?\s*\d+\s*[-:]?\s*/gi, '')
     .replace(/\b(?:Prof\.|Professor|Dr\.)\s+[A-Za-z\.\s]+/gi, '')
     .replace(/\b(?:Silberschatz|Galvin|Tanenbaum|Cormen|Forouzan|Kurose|Stallings)\b/gi, '')
+    .replace(/\b(?:21CS\d{2}|CS\d{3}|BCS\d{3})\b/gi, '')
     .replace(/\(\s*\)|\[\s*\]/g, '')
     .replace(/^[ \t:\-_–—]+|[ \t:\-_–—]+$/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  if (!clean || clean.length < 3 || /^(chapter|chp|unit|module|co\d|po\d|module\s*\d+)$/i.test(clean)) {
+  if (!clean || clean.length < 3 || /^(chapter|chp|unit|module|slide|page|co\d|po\d|module\s*\d+)$/i.test(clean)) {
     const words = (fallbackText || '').replace(/[^a-zA-Z\s]/g, '').split(/\s+/).filter((w) => w.length > 4);
     clean = words.slice(0, 2).map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ') || 'Core Concept';
   }
@@ -879,40 +888,48 @@ ${trimmed}`;
 function generateCheatsheetFallback(text) {
   const paragraphs = text
     .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter((p) => p.length > 40);
+    .map((p) => cleanAcademicText(p.trim()))
+    .filter((p) => p.length > 30);
 
   const sentences = text
     .split(/[.!?]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 25);
+    .map((s) => cleanAcademicText(s.trim()))
+    .filter((s) => s.length > 20);
 
   const words = text.match(/\b[A-Z][a-z]{3,}(?:\s+[A-Z][a-z]{3,})*\b/g) || [];
-  const uniqueTerms = [...new Set(words)].filter(
-    (w) => !/^(chapter|unit|module|course|assessment|faculty|professor)/i.test(w)
-  );
+  const uniqueTerms = [...new Set(words)]
+    .map((w) => cleanAcademicText(w))
+    .filter(
+      (w) => w && w.length > 3 && !/^(chapter|unit|module|course|assessment|faculty|professor|slide|page|author|book)/i.test(w)
+    );
 
   const sections = [];
   const chunkSize = Math.max(1, Math.ceil(paragraphs.length / 5));
 
   for (let i = 0; i < 5 && i * chunkSize < paragraphs.length; i++) {
     const chunk = paragraphs.slice(i * chunkSize, (i + 1) * chunkSize);
-    const sectionTitle = uniqueTerms[i] ? `${uniqueTerms[i]} Foundations` : `Key Principles ${i + 1}`;
+    const rawTitle = uniqueTerms[i] ? `${uniqueTerms[i]} Foundations` : `Core Framework ${i + 1}`;
+    const sectionTitle = sanitizeTopic(rawTitle, `Core Concept ${i + 1}`);
     sections.push({
       heading: sectionTitle,
-      points: chunk.slice(0, 4).map((p) => p.slice(0, 160) + (p.length > 160 ? '...' : '')),
+      points: chunk.slice(0, 4).map((p) => {
+        const cleaned = cleanAcademicText(p);
+        return cleaned.slice(0, 160) + (cleaned.length > 160 ? '...' : '');
+      }).filter(Boolean),
     });
   }
 
+  const cleanSummary = sentences.slice(0, 3).join('. ') + '.';
+
   return {
-    title: 'Document Master Cheatsheet',
-    summary: sentences.slice(0, 3).join('. ') + '.',
+    title: sanitizeTopic(uniqueTerms[0] ? `${uniqueTerms[0]} Study Guide` : 'Document Master Cheatsheet'),
+    summary: cleanSummary.length > 15 ? cleanSummary : 'Comprehensive high-yield synthesis of key educational concepts, mechanisms, and core methodologies.',
     sections,
     keyTerms: uniqueTerms.slice(0, 8).map((term) => ({
-      term,
-      definition: 'Fundamental concept emphasized within the analyzed material.',
+      term: sanitizeTopic(term),
+      definition: 'Fundamental conceptual principle emphasized within the analyzed material.',
     })),
-    quickFacts: sentences.filter((s) => s.length > 35 && s.length < 120).slice(0, 6),
+    quickFacts: sentences.filter((s) => s.length > 35 && s.length < 130).slice(0, 6),
   };
 }
 
@@ -992,8 +1009,8 @@ ${trimmed}`;
 function generateFlashcardsFallback(text, count) {
   const sentences = text
     .split(/[.!?\n]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 35 && s.split(' ').length >= 6);
+    .map((s) => cleanAcademicText(s.trim()))
+    .filter((s) => s.length > 30 && s.split(' ').length >= 5);
 
   return sentences.slice(0, count).map((sentence, idx) => {
     const words = sentence.split(' ');
@@ -1002,9 +1019,9 @@ function generateFlashcardsFallback(text, count) {
 
     return {
       id: idx + 1,
-      front: `Explain the significance of: "${keyword}"`,
+      front: `Explain the fundamental concept of: "${cleanAcademicText(keyword)}"`,
       back: sentence,
-      category: 'Conceptual Principles',
+      category: 'Core Concepts',
     };
   });
 }
@@ -1099,35 +1116,39 @@ ${trimmed}`;
 function generateMindMapFallback(text) {
   const paragraphs = text
     .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter((p) => p.length > 30);
+    .map((p) => cleanAcademicText(p.trim()))
+    .filter((p) => p.length > 25);
 
   const colors = ['#FF9500', '#0284C7', '#38BDF8', '#10B981', '#FF4444', '#22D3EE'];
   const branchCount = Math.min(6, Math.max(3, Math.floor(paragraphs.length / 3)));
 
   const words = text.match(/\b[A-Z][a-z]{3,}\b/g) || [];
-  const uniqueTerms = [...new Set(words)].filter(
-    (w) => !/^(chapter|unit|module|course|assessment|faculty|professor)/i.test(w)
-  );
+  const uniqueTerms = [...new Set(words)]
+    .map((w) => cleanAcademicText(w))
+    .filter(
+      (w) => w && w.length > 3 && !/^(chapter|unit|module|course|assessment|faculty|professor|slide|page|author|book)/i.test(w)
+    );
 
   const branches = Array.from({ length: branchCount }, (_, i) => {
     const chunk = paragraphs.slice(
       Math.floor((i * paragraphs.length) / branchCount),
       Math.floor(((i + 1) * paragraphs.length) / branchCount)
     );
-    const chunkWords = chunk.join(' ').split(/\s+/).filter((w) => w.length > 5);
+    const chunkWords = chunk.join(' ').split(/\s+/).filter((w) => w.length > 4);
     const subTopics = [...new Set(chunkWords.slice(0, 8))].slice(0, 3);
-    const branchLabel = uniqueTerms[i] ? `${uniqueTerms[i]} Core` : `Thematic Pillar ${i + 1}`;
+    const rawLabel = uniqueTerms[i] ? `${uniqueTerms[i]} Architecture` : `Pillar ${i + 1}`;
+    const branchLabel = sanitizeTopic(rawLabel, `Concept Pillar ${i + 1}`);
 
     return {
       label: branchLabel,
       color: colors[i % colors.length],
       children: subTopics.map((term) => ({
-        label: term.replace(/[^a-zA-Z0-9 ]/g, ''),
-        children: [{ label: 'Key conceptual detail' }],
+        label: sanitizeTopic(term.replace(/[^a-zA-Z0-9 ]/g, ''), 'Component Detail'),
+        children: [{ label: 'Key conceptual mechanism' }],
       })),
     };
   });
 
-  return { root: 'Core Conceptual Architecture', branches };
+  const rootTopic = sanitizeTopic(uniqueTerms[0] || 'Core Conceptual Architecture');
+  return { root: rootTopic, branches };
 }

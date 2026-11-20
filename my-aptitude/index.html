@@ -30,6 +30,40 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <!-- TC39 Uint8Array toHex Polyfill for PDF.js & universal browser compatibility -->
+    <script>
+      if (typeof Uint8Array !== 'undefined') {
+        if (!('toHex' in Uint8Array.prototype)) {
+          Object.defineProperty(Uint8Array.prototype, 'toHex', {
+            value: function() {
+              var hex = '';
+              for (var i = 0; i < this.length; i++) {
+                var b = this[i].toString(16);
+                hex += b.length === 1 ? '0' + b : b;
+              }
+              return hex;
+            },
+            writable: true,
+            configurable: true
+          });
+        }
+        if (!('fromHex' in Uint8Array)) {
+          Object.defineProperty(Uint8Array, 'fromHex', {
+            value: function(hexStr) {
+              var clean = (hexStr || '').replace(/[^0-9a-fA-F]/g, '');
+              var bytes = new Uint8Array(Math.floor(clean.length / 2));
+              for (var i = 0; i < bytes.length; i++) {
+                bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+              }
+              return bytes;
+            },
+            writable: true,
+            configurable: true
+          });
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
