@@ -560,10 +560,19 @@ export default function Dashboard({ initialView = 'dashboard' }) {
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.parentElement.querySelector('.avatar-initial-fallback');
+                        if (fallback) fallback.style.display = 'flex';
                       }}
                     />
                   ) : null}
-                  <span className="avatar-initial-fallback">{userInitial}</span>
+                  <span
+                    className="avatar-initial-fallback"
+                    style={{
+                      display: user?.avatar && user.avatar.startsWith('http') ? 'none' : 'flex'
+                    }}
+                  >
+                    {userInitial}
+                  </span>
                   <span className="online-beacon" />
                 </div>
                 <div className="desktop-user-meta desktop-only">
@@ -582,27 +591,15 @@ export default function Dashboard({ initialView = 'dashboard' }) {
           ============================================================ */}
       <main className="matiks-main-content matiks-web-container">
         {/* TOP ROW: Live Event Story Circles */}
-        <section className="matiks-stories-section" aria-label="Contenders and Daily Event">
+        <section className="matiks-stories-section" aria-label="Contenders and Community">
           <div className="matiks-stories-row">
-            {/* Daily Event Glowing Circle */}
-            <div
-              className="story-circle-item daily-story"
-              onClick={() => handleLaunchPractice({ category: 'math', count: 5, timed: true, isDailyChallenge: true })}
-              role="button"
-              tabIndex={0}
-              title={`Daily Sprint Challenge • ${timeLeft.hours}h ${timeLeft.minutes}m left`}
-            >
-              <div className="daily-ring-circle">
-                <Flame size={24} className="text-orange" />
-                <span className="daily-pulse-dot" />
-              </div>
-              <span className="story-label text-orange">DAILY ({timeLeft.hours}h)</span>
-            </div>
+            {/* User Profile Story Circle */}
             <div
               className="story-circle-item you-story"
               onClick={() => setProfileDrawerOpen(true)}
               role="button"
               tabIndex={0}
+              title={`View Profile • ${userName}`}
             >
               <div className="user-ring-circle">
                 {user?.avatar && user.avatar.startsWith('http') ? (
@@ -613,13 +610,22 @@ export default function Dashboard({ initialView = 'dashboard' }) {
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.parentElement.querySelector('.user-avatar-initial-fallback');
+                      if (fallback) fallback.style.display = 'flex';
                     }}
                   />
                 ) : null}
-                <span className="user-avatar-initial-fallback">{userInitial}</span>
+                <span
+                  className="user-avatar-initial-fallback"
+                  style={{
+                    display: user?.avatar && user.avatar.startsWith('http') ? 'none' : 'flex'
+                  }}
+                >
+                  {userInitial}
+                </span>
                 <span className="user-active-dot" />
               </div>
-              <span className="story-label">YOU (LVL {level})</span>
+              <span className="story-label you-story-label">YOU</span>
             </div>
 
             {/* Live Real Peers from Supabase Database */}
