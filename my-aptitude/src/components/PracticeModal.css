@@ -203,3 +203,58 @@
   font-weight: 600;
   color: var(--text);
 }
+
+/* Question Count Selector Chips */
+.pm-count-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pm-count-title {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pm-count-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pm-count-chip {
+  padding: 8px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.pm-count-chip:hover {
+  background: var(--bg-card);
+  color: var(--text);
+  border-color: var(--border-light);
+}
+
+.pm-count-chip.active {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: #2563EB;
+  color: #2563EB;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .pm-count-chip.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38BDF8;
+  color: #38BDF8;
+}

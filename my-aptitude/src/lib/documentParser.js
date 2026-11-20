@@ -6,6 +6,7 @@
  */
 
 import JSZip from 'jszip';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ocrMediaWithGemini, analyzeDiagramWithGemini } from './studyToolsAI.js';
 
 // ─── Base64 & Canvas Helpers ──────────────────────────────────────────────────
@@ -109,7 +110,7 @@ async function extractFromPDF(file, onProgress) {
   const pdfjsLib = await import('pdfjs-dist');
   try {
     if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version || '5.4.624'}/build/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
     }
   } catch {}
 

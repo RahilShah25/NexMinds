@@ -22,18 +22,19 @@ export default function PracticeModal({
   onLaunchPractice,
 }) {
   const [timed, setTimed] = useState(true);
+  const [questionCount, setQuestionCount] = useState(5);
   const [launching, setLaunching] = useState(false);
 
   const meta = CAT_META[initialCategory] || CAT_META['math'];
   const Icon = meta.icon;
-  const xpReward = isDailyChallenge ? 50 : 35;
+  const xpReward = isDailyChallenge ? 50 : Math.round(35 * (questionCount / 5));
 
   const handleLaunch = () => {
     setLaunching(true);
     setTimeout(() => {
       setLaunching(false);
       onClose();
-      onLaunchPractice?.({ category: initialCategory, count: 5, timed, isDailyChallenge });
+      onLaunchPractice?.({ category: initialCategory, count: questionCount, timed, isDailyChallenge });
     }, 400);
   };
 
@@ -93,7 +94,24 @@ export default function PracticeModal({
               </div>
               <div className="pm-cat-info">
                 <h2 id="practice-modal-title" className="pm-cat-name">{meta.label}</h2>
-                <span className="pm-cat-sub">5 Questions • Adaptive Difficulty</span>
+                <span className="pm-cat-sub">{questionCount} Questions • Supabase Dynamic Bank</span>
+              </div>
+            </div>
+
+            {/* Question count selector */}
+            <div className="pm-count-section">
+              <span className="pm-count-title">Number of Questions:</span>
+              <div className="pm-count-chips">
+                {[5, 10, 15].map((cnt) => (
+                  <button
+                    key={cnt}
+                    type="button"
+                    className={`pm-count-chip ${questionCount === cnt ? 'active' : ''}`}
+                    onClick={() => setQuestionCount(cnt)}
+                  >
+                    {cnt} Questions
+                  </button>
+                ))}
               </div>
             </div>
 

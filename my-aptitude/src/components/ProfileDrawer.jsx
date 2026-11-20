@@ -37,6 +37,7 @@ export default function ProfileDrawer({
   const { user, logout, updateUser, updateRole, saveProfileDetails, resetStats } = useAuth();
   const [goal, setGoal] = useState(user?.dailyGoal ?? 100);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   // Profile Edit State
   const [isEditing, setIsEditing] = useState(false);
@@ -181,18 +182,17 @@ export default function ProfileDrawer({
           <div className="drawer-bio-card">
             <div className="drawer-avatar-wrap">
               <div className="drawer-avatar">
-                {user?.avatar && user.avatar.startsWith('http') ? (
+                {user?.avatar && user.avatar.startsWith('http') && !avatarError ? (
                   <img
                     src={user.avatar}
                     alt={user?.name || 'User'}
                     className="drawer-avatar-img"
                     referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    onError={() => setAvatarError(true)}
                   />
-                ) : null}
-                <span className="drawer-avatar-initial">{userInitial}</span>
+                ) : (
+                  <span className="drawer-avatar-initial">{userInitial}</span>
+                )}
               </div>
               <span className="drawer-avatar-badge" title="Active">
                 <ShieldCheck size={12} />

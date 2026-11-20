@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, CheckCircle2, XCircle, ChevronRight, Home, Clock, Share2, Sparkles,
   FastForward, Puzzle, Crown, Hash, Database, RotateCcw, HelpCircle,
@@ -6,46 +6,8 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
-import { shuffleQuestionOptions } from '../lib/studyToolsAI';
+import { fetchAptitudeQuestions, getStaticFallbackQuestions } from '../lib/questionsService';
 import './QuizScreen.css';
-
-/* ─── Static Question Bank ─────────────────────────────────── */
-const QUESTIONS = {
-  math: [
-    { q: 'A car travels 120 km in 2 hours. What is its average speed?', options: ['50 km/h', '60 km/h', '70 km/h', '80 km/h'], answer: 1, explanation: 'Speed = Distance ÷ Time = 120 km ÷ 2 h = 60 km/h.' },
-    { q: 'What is 15% of 240 calculated mentally?', options: ['32', '36', '40', '48'], answer: 1, explanation: '10% of 240 = 24. 5% = 12. Sum: 24 + 12 = 36.' },
-    { q: '5 workers finish a job in 8 days. How long will 10 workers take?', options: ['6 days', '4 days', '3 days', '5 days'], answer: 1, explanation: 'Total work = 5 × 8 = 40 man-days. For 10 workers: 40 ÷ 10 = 4 days.' },
-    { q: 'A 200m train moves at 54 km/h. How many seconds to cross a signal pole?', options: ['10 sec', '12 sec', '13.3 sec', '15 sec'], answer: 2, explanation: '54 km/h = 54 × (5/18) = 15 m/s. Time = 200 ÷ 15 ≈ 13.3 seconds.' },
-    { q: 'Goods marked 25% above cost are sold at a 10% discount. What is the net profit %?', options: ['10%', '12.5%', '15%', '20%'], answer: 1, explanation: 'SP = 1.25 × 0.9 × CP = 1.125 CP → Net profit is 12.5%.' },
-  ],
-  puzzle: [
-    { q: 'What comes next in the geometric progression: 2, 4, 8, 16, __ ?', options: ['24', '28', '32', '36'], answer: 2, explanation: 'Each term is multiplied by 2: 16 × 2 = 32.' },
-    { q: 'Find the missing square in the series: 1, 4, 9, 16, 25, __ ?', options: ['30', '35', '36', '40'], answer: 2, explanation: 'Consecutive integer squares: 1², 2², 3², 4², 5², 6² = 36.' },
-    { q: 'Which value fills the blank? 3, 6, 11, 18, 27, __ ?', options: ['36', '38', '40', '35'], answer: 1, explanation: 'Differences are odd primes: +3, +5, +7, +9, +11 → 27 + 11 = 38.' },
-    { q: 'Letter sequence: A, C, F, J, O, __ ?', options: ['T', 'U', 'V', 'W'], answer: 1, explanation: 'Alphabet increments: +2, +3, +4, +5, +6 → O(15) + 6 = U(21).' },
-    { q: 'Identify the odd element out: 4, 8, 12, 15, 16', options: ['4', '8', '12', '15'], answer: 3, explanation: '15 is not divisible by 4, whereas 4, 8, 12, and 16 are all multiples of 4.' },
-  ],
-  logic: [
-    { q: 'All cats are animals. Some animals are pets.\nConclusion: "Some cats are pets" is:', options: ['Definitely True', 'Definitely False', 'Cannot be determined', 'Always False'], answer: 2, explanation: 'The pet subset may not intersect with the feline subset. We cannot logically conclude.' },
-    { q: 'If A > B and B > C, what is the relation between A and C?', options: ['A < C', 'A = C', 'A > C', 'Cannot say'], answer: 2, explanation: 'By the transitive property of inequality: A > B > C → A > C.' },
-    { q: 'Ram is taller than Shyam. Mohan is shorter than Shyam. Who is tallest?', options: ['Shyam', 'Mohan', 'Ram', 'Cannot say'], answer: 2, explanation: 'Ordering from tallest to shortest: Ram > Shyam > Mohan. Ram is the tallest.' },
-    { q: 'All roses are flowers. Some flowers are red.\nConclusion: "Some roses are red" is:', options: ['True', 'Maybe True', 'False', 'Cannot say'], answer: 3, explanation: 'Red flowers could exist entirely outside of roses. The conclusion cannot be firmly drawn.' },
-    { q: 'P is the father of Q. Q is the sister of R. What is P to R?', options: ['Uncle', 'Brother', 'Father', 'Grandfather'], answer: 2, explanation: 'Q and R are siblings. Since P is the father of Q, P is also the father of R.' },
-  ],
-  memory: [
-    { q: 'What is the next prime number immediately following 13?', options: ['15', '16', '17', '19'], answer: 2, explanation: '14 is composite (2×7), 15 is composite (3×5), 16 is composite (4×4). 17 has only 1 and 17 as factors.' },
-    { q: 'What is the square root of 2025?', options: ['40', '42', '45', '50'], answer: 2, explanation: '45 × 45 = 2025 (4 × 5 = 20, 5 × 5 = 25).' },
-    { q: 'Solve the algebraic equation for x: 3x + 7 = 22', options: ['4', '5', '6', '3'], answer: 1, explanation: '3x = 22 − 7 = 15 → x = 15 ÷ 3 = 5.' },
-    { q: 'What is the Lowest Common Multiple (LCM) of 4, 6, and 8?', options: ['16', '24', '48', '12'], answer: 1, explanation: 'Prime factors: 4=2², 6=2×3, 8=2³. LCM = 2³ × 3 = 24.' },
-    { q: 'Mental math: 256 × 0.25 = ?', options: ['54', '60', '64', '68'], answer: 2, explanation: 'Multiplying by 0.25 is equivalent to dividing by 4: 256 ÷ 4 = 64.' },
-  ],
-};
-
-QUESTIONS.quantitative = QUESTIONS.math;
-QUESTIONS.pattern = QUESTIONS.puzzle;
-QUESTIONS.logical = QUESTIONS.logic;
-QUESTIONS.numerical = QUESTIONS.memory;
 
 const CAT_META = {
   math: { label: 'Quantitative Aptitude', shortName: 'Math Sprint', color: '#F59E0B', icon: FastForward },
@@ -64,6 +26,7 @@ const TIMED_SECS = 30;
 export default function QuizScreen({ config = {}, onComplete }) {
   const { addXP, recordQuizResult } = useAuth();
   const category = (config?.category || 'math').toLowerCase();
+  const targetCount = config?.count || 5;
   const timed = config?.timed ?? true;
   const isDailyChallenge = config?.isDailyChallenge ?? false;
 
@@ -71,14 +34,9 @@ export default function QuizScreen({ config = {}, onComplete }) {
   const meta = { ...rawMeta };
   const Icon = meta.icon;
 
-  const getInitialQuestions = (cat) => {
-    return (QUESTIONS[cat] && QUESTIONS[cat].length > 0)
-      ? QUESTIONS[cat]
-      : (QUESTIONS.math || []);
-  };
-
-  const [questions, setQuestions] = useState(() => shuffleQuestionOptions(getInitialQuestions(category)));
+  const [questions, setQuestions] = useState(() => getStaticFallbackQuestions(category, targetCount));
   const [isDbQuestion, setIsDbQuestion] = useState(false);
+  const [totalDbCount, setTotalDbCount] = useState(0);
   const xpAwardedRef = useRef(false);
 
   const [qIndex, setQIndex] = useState(0);
@@ -88,57 +46,26 @@ export default function QuizScreen({ config = {}, onComplete }) {
   const [phase, setPhase] = useState('quiz'); // 'quiz' | 'results'
 
   // Fetch Supabase DB questions dynamically
-  useEffect(() => {
-    let isMounted = true;
-    const fetchDbQuestions = async () => {
-      if (!isSupabaseConfigured()) return;
-      try {
-        const cat = category.toLowerCase();
-        const validCats = [cat];
-        if (cat === 'math' || cat === 'quantitative') validCats.push('math', 'quantitative');
-        if (cat === 'puzzle' || cat === 'pattern') validCats.push('puzzle', 'pattern');
-        if (cat === 'logic' || cat === 'logical') validCats.push('logic', 'logical');
-        if (cat === 'memory' || cat === 'numerical') validCats.push('memory', 'numerical');
+  const loadDbQuestions = useCallback(async () => {
+    try {
+      const { questions: dbQs, isFromDb, totalInDb } = await fetchAptitudeQuestions({
+        category,
+        count: targetCount,
+      });
 
-        const { data, error } = await supabase
-          .from('questions')
-          .select('*')
-          .in('category', validCats)
-          .limit(30);
-
-        if (error) return;
-
-        if (data && data.length > 0 && isMounted) {
-          const parsed = data
-            .map(row => ({
-              id: row.id,
-              q: row.question || row.q,
-              options: Array.isArray(row.options)
-                ? row.options
-                : (typeof row.options === 'string' ? JSON.parse(row.options) : []),
-              answer: typeof row.answer_index === 'number'
-                ? row.answer_index
-                : (typeof row.answer === 'number' ? row.answer : 0),
-              explanation: row.explanation || '',
-              difficulty: row.difficulty || 'medium',
-              isFromDb: true,
-            }))
-            .filter(item => item.q && Array.isArray(item.options) && item.options.length >= 2);
-
-          if (parsed.length > 0 && isMounted) {
-            const shuffled = shuffleQuestionOptions([...parsed].sort(() => 0.5 - Math.random()).slice(0, 5));
-            setQuestions(prev => (qIndex === 0 && selected === null ? shuffled : prev));
-            setIsDbQuestion(true);
-          }
-        }
-      } catch (err) {
-        console.warn('DB Questions fetch notice:', err);
+      if (dbQs && dbQs.length > 0) {
+        setQuestions((prev) => (qIndex === 0 && selected === null ? dbQs : prev));
+        setIsDbQuestion(isFromDb);
+        setTotalDbCount(totalInDb);
       }
-    };
+    } catch (err) {
+      console.warn('[QuizScreen] Question fetch notice:', err);
+    }
+  }, [category, targetCount, qIndex, selected]);
 
-    fetchDbQuestions();
-    return () => { isMounted = false; };
-  }, [category]);
+  useEffect(() => {
+    loadDbQuestions();
+  }, [loadDbQuestions]);
 
   const currentQ = questions[qIndex] || questions[0];
   const isAnswered = selected !== null;
@@ -207,13 +134,26 @@ export default function QuizScreen({ config = {}, onComplete }) {
     }
   };
 
-  const handleRetry = () => {
+  const handleRetry = async () => {
     xpAwardedRef.current = false;
     setAnswers([]);
     setSelected(null);
     setQIndex(0);
     setTimer(TIMED_SECS);
-    setQuestions(shuffleQuestionOptions(getInitialQuestions(category)));
+
+    try {
+      const { questions: freshQs, isFromDb, totalInDb } = await fetchAptitudeQuestions({
+        category,
+        count: targetCount,
+      });
+      if (freshQs && freshQs.length > 0) {
+        setQuestions(freshQs);
+        setIsDbQuestion(isFromDb);
+        setTotalDbCount(totalInDb);
+      }
+    } catch {
+      setQuestions(getStaticFallbackQuestions(category, targetCount));
+    }
     setPhase('quiz');
   };
 
