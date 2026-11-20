@@ -7,7 +7,16 @@ import {
   Check, List, Layers, Eye, Shuffle
 } from 'lucide-react';
 import { extractTextFromFile } from '../lib/documentParser';
-import { generateQuiz, generateCheatsheet, generateFlashcards, generateMindMap, shuffleQuestionOptions } from '../lib/studyToolsAI';
+import {
+  generateQuiz,
+  generateCheatsheet,
+  generateFlashcards,
+  generateMindMap,
+  shuffleQuestionOptions,
+  getApiKey,
+  setCustomApiKey,
+  hasApiKey,
+} from '../lib/studyToolsAI';
 import { exportCheatsheetToPDF, printCheatsheet } from '../lib/pdfExport';
 import './DocumentStudyTool.css';
 
@@ -60,7 +69,15 @@ export default function DocumentStudyTool({ onBack }) {
   const [generatingStep, setGeneratingStep] = useState('');
   const [questionCount, setQuestionCount] = useState(15); // 10, 15, or 20 MCQs
   const [activeDiagramModal, setActiveDiagramModal] = useState(null);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [hasKey, setHasKey] = useState(() => hasApiKey());
   const fileInputRef = useRef(null);
+
+  const handleSaveKey = (newKey) => {
+    setCustomApiKey(newKey);
+    setHasKey(hasApiKey());
+    setShowKeyModal(false);
+  };
 
   const acceptedTypes = '.pdf,.docx,.doc,.pptx,.ppt,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.gif,.tiff,.svg';
 
@@ -181,15 +198,27 @@ export default function DocumentStudyTool({ onBack }) {
           </div>
         </div>
 
-        {fileInfo && phase !== 'upload' && (
-          <div className="dst-file-chip">
-            <FileCheck size={14} />
-            <span title={fileInfo.name}>{fileInfo.name}</span>
-            <button onClick={resetToUpload} className="dst-chip-clear" title="Remove file">
-              <X size={12} />
-            </button>
-          </div>
-        )}
+        <div className="dst-header-actions">
+          <button
+            type="button"
+            className={`dst-ai-status-pill ${hasKey ? 'dst-ai-status-pill--active' : 'dst-ai-status-pill--setup'}`}
+            onClick={() => setShowKeyModal(true)}
+            title="Configure Gemini API key for AI multimodal vision & deep reasoning"
+          >
+            <Sparkles size={14} />
+            <span>{hasKey ? 'AI Vision Active' : 'Setup Gemini AI'}</span>
+          </button>
+
+          {fileInfo && phase !== 'upload' && (
+            <div className="dst-file-chip">
+              <FileCheck size={14} />
+              <span title={fileInfo.name}>{fileInfo.name}</span>
+              <button onClick={resetToUpload} className="dst-chip-clear" title="Remove file">
+                <X size={12} />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Error Banner */}
@@ -242,6 +271,8 @@ export default function DocumentStudyTool({ onBack }) {
           questionCount={questionCount}
           setQuestionCount={setQuestionCount}
           onOpenDiagram={(img) => setActiveDiagramModal(img)}
+          hasKey={hasKey}
+          onOpenKeyModal={() => setShowKeyModal(true)}
         />
       )}
 
@@ -267,6 +298,13 @@ export default function DocumentStudyTool({ onBack }) {
           onClose={() => setActiveDiagramModal(null)}
         />
       )}
+
+      {/* Gemini AI Settings Modal */}
+      <GeminiKeyModal
+        isOpen={showKeyModal}
+        onClose={() => setShowKeyModal(false)}
+        onSave={handleSaveKey}
+      />
     </div>
   );
 }
@@ -351,6 +389,8 @@ function ToolSelector({
   questionCount = 15,
   setQuestionCount,
   onOpenDiagram,
+  hasKey = false,
+  onOpenKeyModal,
 }) {
   const wordCount = fileInfo?.wordCount || extractedText.split(/\s+/).filter(Boolean).length;
   const pageCount = fileInfo?.pageCount || 1;
@@ -391,6 +431,16 @@ function ToolSelector({
           </div>
         </div>
       </div>
+
+      {!hasKey && (
+        <div className="dst-key-tip-banner" onClick={onOpenKeyModal} role="button" tabIndex={0}>
+          <Sparkles size={16} className="text-accent" />
+          <span>
+            <strong>Running in Fast Algorithmic mode.</strong> Connect your free Google Gemini API key to activate visual multimodal diagram extraction and deep AI reasoning.
+          </span>
+          <button type="button" className="dst-key-tip-btn">Connect Key</button>
+        </div>
+      )}
 
       <div className="dst-tool-section-title">
         <h2>Select an AI Study Tool</h2>
@@ -1303,6 +1353,93 @@ function DiagramModal({ image, onClose }) {
             <div className="dst-diagram-modal-text">
               {image.description}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. GEMINI API KEY CONFIGURATION MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function GeminiKeyModal({ isOpen, onClose, onSave }) {
+  const [keyInput, setKeyInput] = useState(() => getApiKey() || '');
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setKeyInput(getApiKey() || '');
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    onSave(keyInput);
+    setSavedSuccess(true);
+    setTimeout(() => {
+      setSavedSuccess(false);
+      onClose();
+    }, 600);
+  };
+
+  const handleClear = () => {
+    setKeyInput('');
+    onSave('');
+    onClose();
+  };
+
+  return (
+    <div className="dst-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="dst-diagram-modal dst-key-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="dst-diagram-modal-header">
+          <div className="dst-diagram-modal-title">
+            <Sparkles size={18} className="text-accent" />
+            <span>Google Gemini AI Engine Configuration</span>
+          </div>
+          <button className="dst-modal-close" onClick={onClose} aria-label="Close modal">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="dst-key-modal-content">
+          <p className="dst-key-modal-desc">
+            Connect your Google Gemini API key to unlock visual OCR, presentation diagram reasoning, and high-accuracy conceptual generation directly from your study material.
+          </p>
+
+          <div className="dst-key-input-box">
+            <label htmlFor="dst-gemini-key-input" className="dst-key-label">Gemini API Key</label>
+            <input
+              id="dst-gemini-key-input"
+              type="password"
+              placeholder="AIzaSy..."
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              className="dst-key-input"
+              autoFocus
+            />
+            <span className="dst-key-hint">
+              Stored safely in your local browser. Free keys are available from{' '}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-accent">
+                Google AI Studio ↗
+              </a>
+            </span>
+          </div>
+
+          <div className="dst-key-actions-row">
+            {keyInput && (
+              <button type="button" className="dst-key-clear-btn" onClick={handleClear}>
+                Remove Key
+              </button>
+            )}
+            <div style={{ flex: 1 }} />
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="button" className="btn-primary" onClick={handleSave}>
+              {savedSuccess ? 'Saved!' : 'Save & Activate'}
+            </button>
           </div>
         </div>
       </div>

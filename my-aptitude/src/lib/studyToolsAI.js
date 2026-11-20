@@ -13,19 +13,36 @@
  */
 
 export const CANDIDATE_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.8-flash',
-  'gemini-3.5-flash',
-  'gemini-3-flash-preview',
-  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-8b',
+  'gemini-1.5-pro',
 ];
 
-function getApiKey() {
+export function getApiKey() {
   return (
+    (typeof localStorage !== 'undefined' && localStorage.getItem('nexminds_gemini_api_key')) ||
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) ||
     (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) ||
     ''
   );
+}
+
+export function setCustomApiKey(key) {
+  if (typeof localStorage !== 'undefined') {
+    if (key && typeof key === 'string' && key.trim()) {
+      localStorage.setItem('nexminds_gemini_api_key', key.trim());
+    } else {
+      localStorage.removeItem('nexminds_gemini_api_key');
+    }
+  }
+}
+
+export function hasApiKey() {
+  const k = getApiKey();
+  return Boolean(k && k.trim().length > 5);
 }
 
 // ─── Gemini Waterfall Request Runner ──────────────────────────────────────────
@@ -660,20 +677,44 @@ export function supplementQuestions(text, baseQuestions = [], targetCount = 15) 
   const rawSentences = text
     .split(/[.!?\n]+/)
     .map((s) => cleanAcademicText(s.replace(/^[\d\-•*>\s]+/, '').trim()))
-    .filter((s) => s.length > 30 && s.split(/\s+/).length >= 6);
+    .filter((s) => s.length > 25 && s.split(/\s+/).length >= 4);
+
+  let sentencesList = rawSentences;
+  if (sentencesList.length < 5) {
+    const backupSentences = text
+      .split(/[\n;•:]+/)
+      .map((s) => cleanAcademicText(s.replace(/^[\d\-*>\s]+/, '').trim()))
+      .filter((s) => s.length > 12 && s.split(/\s+/).length >= 3);
+    if (backupSentences.length > 0) {
+      sentencesList = [...sentencesList, ...backupSentences];
+    }
+  }
+
+  if (sentencesList.length === 0) {
+    sentencesList = [
+      'Foundational principles and architectural frameworks define the structural foundation of the analyzed material.',
+      'Operational workflows execute through coordinated procedural stages and sequential mechanisms.',
+      'System parameters, threshold criteria, and operational metrics regulate performance and stability.',
+      'Conceptual models undergo verification through structured diagnostic evaluations and analytical criteria.',
+      'Core theoretical principles integrate domain-specific rules with practical implementations.'
+    ];
+  }
 
   const words = [...new Set(text.match(/\b[A-Za-z]{4,}\b/g) || [])]
     .map((w) => cleanAcademicText(w))
     .filter((w) => w.length > 3 && !/^(chapter|unit|module|course|assessment|faculty|professor|department|semester|university|college|author|publisher)/i.test(w));
 
   const techTerms = words.filter((w) => /^[A-Z][a-z]+/.test(w));
-  const pool = techTerms.length >= 8 ? techTerms : words;
+  const pool = techTerms.length >= 8 ? techTerms : (words.length >= 8 ? words : [
+    ...words,
+    'Architecture', 'Mechanism', 'Parameter', 'Framework', 'Optimization', 'Protocol', 'Principle', 'Component'
+  ]);
 
   let attempt = 0;
-  while (result.length < desired && attempt < 200) {
+  while (result.length < desired && attempt < 250) {
     attempt++;
-    const sIdx = (result.length + attempt) % Math.max(1, rawSentences.length);
-    const sentence = rawSentences[sIdx] || 'Foundational principles of the subject matter are systematically developed throughout the text.';
+    const sIdx = (result.length + attempt) % Math.max(1, sentencesList.length);
+    const sentence = sentencesList[sIdx] || 'Foundational principles of the subject matter are systematically developed throughout the text.';
     const sWords = sentence.split(/\s+/).filter((w) => w.length > 4 && /^[a-zA-Z]+$/.test(w));
 
     const keyWord = sWords[(result.length + attempt) % Math.max(1, sWords.length)] || pool[(result.length + attempt) % Math.max(1, pool.length)] || 'Principle';
