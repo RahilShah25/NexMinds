@@ -122,7 +122,7 @@ export default function RankInfoModal({ isOpen, onClose, initialTab = 'rank' }) 
           {activeTab === 'tiers' && (
             <div className="rank-info-section">
               <p className="section-lead-text">
-                All thinkers start in Bronze and climb the ranks dynamically by winning blitz duels and earning XP.
+                All thinkers start in Bronze and climb the ranks dynamically by completing timed assessment drills and earning XP.
               </p>
 
               <div className="tiers-table-wrap">
@@ -137,31 +137,31 @@ export default function RankInfoModal({ isOpen, onClose, initialTab = 'rank' }) 
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="tier-name text-orange">🥉 Bronze Tier</td>
+                      <td className="tier-name text-orange">Bronze Tier</td>
                       <td>0 – 499 XP</td>
-                      <td>Basic sprint duels, Standard analytics</td>
+                      <td>Basic timed drills, Standard analytics</td>
                       <td><span className="tier-pill">Level 1</span></td>
                     </tr>
                     <tr className="tier-row--highlight">
-                      <td className="tier-name text-cyan">🥈 Silver Tier (Current)</td>
+                      <td className="tier-name text-cyan">Silver Tier (Current)</td>
                       <td>500 – 1,249 XP</td>
                       <td>Unlocks Study Workbook & 1 Streak Freeze</td>
                       <td><span className="tier-pill tier-pill--active">Level 2</span></td>
                     </tr>
                     <tr>
-                      <td className="tier-name text-lime">🥇 Gold Tier</td>
+                      <td className="tier-name text-lime">Gold Tier</td>
                       <td>1,250 – 2,499 XP</td>
                       <td>Rewards Store discounts + 1.25x Multiplier</td>
                       <td><span className="tier-pill">Level 3</span></td>
                     </tr>
                     <tr>
-                      <td className="tier-name text-purple">💎 Platinum Tier</td>
+                      <td className="tier-name text-blue">Platinum Tier</td>
                       <td>2,500 – 4,999 XP</td>
                       <td>Exclusive FAANG mock interview slots</td>
                       <td><span className="tier-pill">Level 4</span></td>
                     </tr>
                     <tr>
-                      <td className="tier-name text-gold">👑 Diamond Master</td>
+                      <td className="tier-name text-gold">Diamond Master</td>
                       <td>5,000+ XP</td>
                       <td>Top 1% Global Leaderboard & Hall of Fame</td>
                       <td><span className="tier-pill">Level 5+</span></td>
@@ -220,7 +220,7 @@ export default function RankInfoModal({ isOpen, onClose, initialTab = 'rank' }) 
                   <CheckCircle2 size={18} className="text-lime flex-shrink-0" />
                   <div>
                     <strong>Anti-Cheating & Clock Integrity</strong>
-                    <p>Tab switches and external automation immediately forfeit the active duel to preserve fair leaderboard standing.</p>
+                    <p>Tab switches and external automation immediately forfeit the active assessment to preserve fair leaderboard standing.</p>
                   </div>
                 </div>
 

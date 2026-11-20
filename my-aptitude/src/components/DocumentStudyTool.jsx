@@ -19,7 +19,6 @@ const STUDY_TOOLS = [
     icon: Zap,
     color: '#FF9500',
     desc: 'Deep conceptual MCQs with randomized options, instant scoring & explanations',
-    emoji: '🎯',
   },
   {
     id: 'cheatsheet',
@@ -27,23 +26,20 @@ const STUDY_TOOLS = [
     icon: BookOpen,
     color: '#38BDF8',
     desc: 'Structured high-yield summary of modules, formulas, terms, and key facts',
-    emoji: '📋',
   },
   {
     id: 'flashcards',
     label: 'Flashcards',
     icon: Brain,
-    color: '#A855F7',
+    color: '#0284C7',
     desc: 'Active recall cards to test memory retention and key definitions',
-    emoji: '🧠',
   },
   {
     id: 'mindmap',
     label: 'Mind Map',
     icon: Map,
-    color: '#C6FF45',
+    color: '#10B981',
     desc: 'Hierarchical visual breakdown of document topics and relationships',
-    emoji: '🗺️',
   },
 ];
 
@@ -62,6 +58,8 @@ export default function DocumentStudyTool({ onBack }) {
   const [processingMsg, setProcessingMsg] = useState('');
   const [processingPercent, setProcessingPercent] = useState(0);
   const [generatingStep, setGeneratingStep] = useState('');
+  const [questionCount, setQuestionCount] = useState(15); // 10, 15, or 20 MCQs
+  const [activeDiagramModal, setActiveDiagramModal] = useState(null);
   const fileInputRef = useRef(null);
 
   const acceptedTypes = '.pdf,.docx,.doc,.pptx,.ppt,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.gif,.tiff,.svg';
@@ -104,6 +102,7 @@ export default function DocumentStudyTool({ onBack }) {
         pageCount: parsed.pageCount,
         charCount: parsed.charCount,
         wordCount: parsed.wordCount,
+        images: parsed.images || [],
       });
       setPhase('tools');
     } catch (err) {
@@ -135,7 +134,7 @@ export default function DocumentStudyTool({ onBack }) {
       let result;
       const onStatus = (status) => setGeneratingStep(status);
       if (toolId === 'mcq' || toolId === 'quiz') {
-        result = await generateQuiz(extractedText, 12, onStatus);
+        result = await generateQuiz(extractedText, questionCount, onStatus);
       } else if (toolId === 'cheatsheet') {
         result = await generateCheatsheet(extractedText, onStatus);
       } else if (toolId === 'flashcards') {
@@ -173,7 +172,9 @@ export default function DocumentStudyTool({ onBack }) {
         </button>
 
         <div className="dst-header-title">
-          <span className="dst-header-emoji">📚</span>
+          <div className="dst-header-icon">
+            <BookOpen size={22} className="text-accent" />
+          </div>
           <div>
             <h1 className="dst-title">Smart Study Hub</h1>
             <p className="dst-subtitle">AI Document Intelligence • Instant MCQ Practice, Cheatsheets, Flashcards &amp; Mind Maps</p>
@@ -217,7 +218,7 @@ export default function DocumentStudyTool({ onBack }) {
       {phase === 'processing' && (
         <div className="dst-processing">
           <div className="dst-processing-icon">
-            <Loader2 size={48} className="dst-spin text-purple" />
+            <Loader2 size={48} className="dst-spin text-accent" />
           </div>
           <h2 className="dst-processing-title">Processing & Extracting Content</h2>
           <p className="dst-processing-msg">{processingMsg}</p>
@@ -238,6 +239,9 @@ export default function DocumentStudyTool({ onBack }) {
           extractedText={extractedText}
           onSelectTool={handleToolSelect}
           onReset={resetToUpload}
+          questionCount={questionCount}
+          setQuestionCount={setQuestionCount}
+          onOpenDiagram={(img) => setActiveDiagramModal(img)}
         />
       )}
 
@@ -253,6 +257,14 @@ export default function DocumentStudyTool({ onBack }) {
           fileInfo={fileInfo}
           onBack={() => setPhase('tools')}
           onReset={resetToUpload}
+        />
+      )}
+
+      {/* Visual Diagram Lightbox Modal */}
+      {activeDiagramModal && (
+        <DiagramModal
+          image={activeDiagramModal}
+          onClose={() => setActiveDiagramModal(null)}
         />
       )}
     </div>
@@ -306,17 +318,22 @@ function UploadZone({ dragOver, onDrop, onDragOver, onDragLeave, fileInputRef, a
         <h3 className="dst-hiw-title">Four Instant AI Study Tools</h3>
         <div className="dst-hiw-steps">
           {[
-            { step: '1', title: 'MCQ Practice', desc: '10–15 deep conceptual questions with randomized options & explanations', icon: '🎯' },
-            { step: '2', title: 'Master Cheatsheet', desc: 'Executive summary, key formulas & exam takeaways (PDF download)', icon: '📋' },
-            { step: '3', title: 'Active Flashcards', desc: 'Retention-focused flashcards with mastery tracking', icon: '🧠' },
-            { step: '4', title: 'Visual Mind Map', desc: 'Hierarchical multi-branch topic relationship map', icon: '🗺️' },
-          ].map((s) => (
-            <div key={s.step} className="dst-hiw-step">
-              <div className="dst-hiw-step-icon">{s.icon}</div>
-              <div className="dst-hiw-step-num">{s.title}</div>
-              <div className="dst-hiw-step-text">{s.desc}</div>
-            </div>
-          ))}
+            { step: '1', title: 'MCQ Practice', desc: '10–20 deep conceptual questions with visual diagram analysis', icon: Zap },
+            { step: '2', title: 'Master Cheatsheet', desc: 'Executive summary, key formulas & exam takeaways (PDF download)', icon: BookOpen },
+            { step: '3', title: 'Active Flashcards', desc: 'Retention-focused flashcards with mastery tracking', icon: Brain },
+            { step: '4', title: 'Visual Mind Map', desc: 'Hierarchical multi-branch topic relationship map', icon: Map },
+          ].map((s) => {
+            const StepIcon = s.icon;
+            return (
+              <div key={s.step} className="dst-hiw-step">
+                <div className="dst-hiw-step-icon">
+                  <StepIcon size={20} className="text-accent-light" />
+                </div>
+                <div className="dst-hiw-step-num">{s.title}</div>
+                <div className="dst-hiw-step-text">{s.desc}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -326,9 +343,18 @@ function UploadZone({ dragOver, onDrop, onDragOver, onDragLeave, fileInputRef, a
 // ═══════════════════════════════════════════════════════════════════════════════
 // TOOL SELECTOR
 // ═══════════════════════════════════════════════════════════════════════════════
-function ToolSelector({ fileInfo, extractedText, onSelectTool, onReset }) {
+function ToolSelector({
+  fileInfo,
+  extractedText,
+  onSelectTool,
+  onReset,
+  questionCount = 15,
+  setQuestionCount,
+  onOpenDiagram,
+}) {
   const wordCount = fileInfo?.wordCount || extractedText.split(/\s+/).filter(Boolean).length;
   const pageCount = fileInfo?.pageCount || 1;
+  const hasImages = Array.isArray(fileInfo?.images) && fileInfo.images.length > 0;
 
   return (
     <div className="dst-tool-selector">
@@ -342,7 +368,7 @@ function ToolSelector({ fileInfo, extractedText, onSelectTool, onReset }) {
           </div>
         </div>
         <div className="dst-doc-stat-card">
-          <BookOpen size={22} className="text-purple" />
+          <BookOpen size={22} className="text-accent" />
           <div>
             <div className="dst-stat-value">{wordCount.toLocaleString()}</div>
             <div className="dst-stat-label">Words Extracted</div>
@@ -383,14 +409,35 @@ function ToolSelector({ fileInfo, extractedText, onSelectTool, onReset }) {
               id={`dst-tool-${tool.id}`}
             >
               {tool.id === 'mcq' && (
-                <div className="dst-tool-featured-badge">10–15 Questions</div>
+                <div className="dst-tool-featured-badge">{questionCount} Questions (AI Vision)</div>
               )}
-              <div className="dst-tool-card-emoji">{tool.emoji}</div>
               <div className="dst-tool-card-icon">
                 <Icon size={28} />
               </div>
               <h3 className="dst-tool-card-label">{tool.label}</h3>
               <p className="dst-tool-card-desc">{tool.desc}</p>
+
+              {tool.id === 'mcq' && setQuestionCount && (
+                <div className="dst-mcq-count-picker" onClick={(e) => e.stopPropagation()}>
+                  <span className="dst-mcq-count-label">Question Count:</span>
+                  <div className="dst-mcq-count-pills">
+                    {[10, 15, 20].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        className={`dst-mcq-count-btn ${questionCount === num ? 'dst-mcq-count-btn--active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuestionCount(num);
+                        }}
+                      >
+                        {num} MCQs
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="dst-tool-card-cta">
                 Generate with AI <ChevronRight size={14} />
               </div>
@@ -398,6 +445,49 @@ function ToolSelector({ fileInfo, extractedText, onSelectTool, onReset }) {
           );
         })}
       </div>
+
+      {/* AI Multimodal Vision: Extracted & Analyzed Presentation/Document Schematics */}
+      {hasImages && (
+        <div className="dst-diagrams-gallery-section">
+          <div className="dst-diagrams-header">
+            <div className="dst-diagrams-title-group">
+              <Eye size={20} className="text-cyan" />
+              <h3>AI Vision: Extracted &amp; Analyzed Diagrams ({fileInfo.images.length})</h3>
+            </div>
+            <span className="dst-diagrams-subtitle">
+              Presentation &amp; document schematics synthesized into your MCQ assessment
+            </span>
+          </div>
+
+          <div className="dst-diagrams-grid">
+            {fileInfo.images.map((img, i) => (
+              <div
+                key={img.id || i}
+                className="dst-diagram-card"
+                onClick={() => onOpenDiagram?.(img)}
+                role="button"
+                tabIndex={0}
+                title="Click to view full schematic & AI analysis"
+                onKeyDown={(e) => e.key === 'Enter' && onOpenDiagram?.(img)}
+              >
+                <div className="dst-diagram-thumb-wrap">
+                  <img src={img.dataUrl} alt={img.name || `Diagram ${i + 1}`} className="dst-diagram-thumb-img" />
+                  <span className="dst-diagram-slide-tag">Slide / Page {img.slide || i + 1}</span>
+                </div>
+                <div className="dst-diagram-card-meta">
+                  <div className="dst-diagram-name">{img.name || `Figure ${i + 1}`}</div>
+                  <div className="dst-diagram-snippet">
+                    {(img.description || '').replace(/[\*#_]/g, '').slice(0, 110)}...
+                  </div>
+                  <div className="dst-diagram-view-link">
+                    Inspect Diagram &amp; AI Breakdown <ChevronRight size={13} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -411,7 +501,7 @@ function ResultView({ toolId, result, isGenerating, generatingStep, onRetry, onS
     return (
       <div className="dst-generating">
         <div className="dst-generating-orb">
-          <Loader2 size={52} className="dst-spin" style={{ color: tool?.color || '#A855F7' }} />
+          <Loader2 size={52} className="dst-spin" style={{ color: tool?.color || '#2563EB' }} />
         </div>
         <h2>Analyzing Document & Generating {tool?.label}...</h2>
         <p className="dst-gen-step-txt">{generatingStep || 'Gemini AI is reading content, synthesizing key insights, and structuring your materials...'}</p>
@@ -457,19 +547,22 @@ function ResultView({ toolId, result, isGenerating, generatingStep, onRetry, onS
 
       {/* Persistent Tool Switcher Tabs - Visible across all tool result views */}
       <div className="dst-tool-tabs-bar">
-        {STUDY_TOOLS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`dst-tool-tab-btn ${t.id === toolId ? 'dst-tool-tab-btn--active' : ''}`}
-            onClick={() => onSwitchTool?.(t.id)}
-            style={{ '--tab-color': t.color }}
-          >
-            <span className="dst-tab-emoji">{t.emoji}</span>
-            <span className="dst-tab-label">{t.label}</span>
-            {t.id === 'mcq' && <span className="dst-tab-badge">10–15 Qs</span>}
-          </button>
-        ))}
+        {STUDY_TOOLS.map((t) => {
+          const TabIcon = t.icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              className={`dst-tool-tab-btn ${t.id === toolId ? 'dst-tool-tab-btn--active' : ''}`}
+              onClick={() => onSwitchTool?.(t.id)}
+              style={{ '--tab-color': t.color }}
+            >
+              <span className="dst-tab-icon"><TabIcon size={14} /></span>
+              <span className="dst-tab-label">{t.label}</span>
+              {t.id === 'mcq' && <span className="dst-tab-badge">10–20 Qs</span>}
+            </button>
+          );
+        })}
       </div>
 
       {(toolId === 'mcq' || toolId === 'quiz') && (
@@ -581,12 +674,12 @@ function MCQView({ questions = [], onRegenerate }) {
         </div>
         <p className="dst-quiz-feedback">
           {pct >= 90
-            ? '🏆 Outstanding mastery! You understood the material thoroughly.'
+            ? 'Outstanding mastery! You understood the material thoroughly.'
             : pct >= 70
-            ? '✅ Great job! You have strong comprehension of the document concepts.'
+            ? 'Great job! You have strong comprehension of the document concepts.'
             : pct >= 50
-            ? '📖 Solid effort! Review the detailed explanations below to reinforce key concepts.'
-            : '💪 Keep practicing! Review the Cheatsheet and Flashcards, then retake.'}
+            ? 'Solid effort! Review the detailed explanations below to reinforce key concepts.'
+            : 'Keep practicing! Review the Cheatsheet and Flashcards, then retake.'}
         </p>
 
         <div className="dst-quiz-result-btns">
@@ -629,7 +722,7 @@ function MCQView({ questions = [], onRegenerate }) {
                   <div className="dst-bd-meta">
                     <span className="dst-breakdown-card-num">Q{i + 1}</span>
                     {question.topic && (
-                      <span className="dst-quiz-topic-tag">🎯 {question.topic}</span>
+                      <span className="dst-quiz-topic-tag">{question.topic}</span>
                     )}
                   </div>
                   <span className="dst-breakdown-card-status">
@@ -665,7 +758,7 @@ function MCQView({ questions = [], onRegenerate }) {
                 </div>
                 {question.explanation && (
                   <div className="dst-breakdown-exp">
-                    <strong>💡 Explanation:</strong> {question.explanation}
+                    <strong>Explanation:</strong> {question.explanation}
                   </div>
                 )}
               </div>
@@ -683,9 +776,14 @@ function MCQView({ questions = [], onRegenerate }) {
         <div className="dst-quiz-progress-bar">
           <div className="dst-quiz-progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <span className="dst-quiz-counter">
-          Question {current + 1} of {items.length}
-        </span>
+        <div className="dst-quiz-counter-group">
+          <span className="dst-quiz-counter">
+            Question {current + 1} of {items.length}
+          </span>
+          <span className="dst-quiz-total-pill">
+            {items.length} Questions (AI Grounded)
+          </span>
+        </div>
       </div>
 
       {/* Question Card */}
@@ -694,7 +792,7 @@ function MCQView({ questions = [], onRegenerate }) {
           <span className="dst-quiz-q-num">Question {current + 1}</span>
           {q.topic && (
             <span className="dst-quiz-topic-pill">
-              🎯 {q.topic}
+              {q.topic}
             </span>
           )}
         </div>
@@ -736,7 +834,7 @@ function MCQView({ questions = [], onRegenerate }) {
         {/* Real-time conceptual explanation upon answering */}
         {isAnswered && q.explanation && (
           <div className="dst-quiz-explanation animate-fadeIn">
-            <span className="dst-explanation-tag">💡 Conceptual Explanation</span>
+            <span className="dst-explanation-tag">Conceptual Explanation</span>
             <p>{q.explanation}</p>
           </div>
         )}
@@ -873,7 +971,7 @@ function CheatsheetView({ data }) {
       {/* Key Terms */}
       {data.keyTerms && data.keyTerms.length > 0 && (
         <div className="dst-cs-block">
-          <h3 className="dst-cs-block-title">🔑 Essential Vocabulary & Key Terms</h3>
+          <h3 className="dst-cs-block-title">Essential Vocabulary & Key Terms</h3>
           <div className="dst-cs-terms-grid">
             {data.keyTerms.map((item, i) => (
               <div key={i} className="dst-cs-term-card">
@@ -888,7 +986,7 @@ function CheatsheetView({ data }) {
       {/* Quick Facts */}
       {data.quickFacts && data.quickFacts.length > 0 && (
         <div className="dst-cs-block">
-          <h3 className="dst-cs-block-title">⚡ High-Yield Exam Facts & Takeaways</h3>
+          <h3 className="dst-cs-block-title">High-Yield Exam Facts & Takeaways</h3>
           <div className="dst-cs-facts">
             {data.quickFacts.map((fact, i) => (
               <div key={i} className="dst-cs-fact">
@@ -1022,7 +1120,9 @@ function FlashcardsView({ cards = [] }) {
         </div>
       ) : activeCards.length === 0 ? (
         <div className="dst-flashcards-done">
-          <div className="dst-done-icon">🎉</div>
+          <div className="dst-done-icon">
+            <CheckCircle2 size={36} className="text-success" />
+          </div>
           <h2>All Cards Mastered!</h2>
           <p>You have successfully mastered all {cards.length} cards from this document.</p>
           <button className="dst-btn-primary" onClick={() => { setMastered(new Set()); setCurrent(0); }}>
@@ -1107,7 +1207,7 @@ function MindMapView({ data }) {
 
       <div className="dst-mm-root">
         <div className="dst-mm-root-node">
-          <span className="dst-mm-root-icon">🧠</span>
+          <Sparkles size={16} className="text-accent" />
           <span className="dst-mm-root-txt">{data.root || 'Document Overview'}</span>
         </div>
       </div>
@@ -1165,7 +1265,46 @@ function MindMapView({ data }) {
       </div>
 
       <div className="dst-mm-legend">
-        <p className="dst-mm-legend-text">💡 Click any topic node to expand or collapse details</p>
+        <p className="dst-mm-legend-text">Click any topic node to expand or collapse details</p>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. DIAGRAM & SCHEMATIC LIGHTBOX MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function DiagramModal({ image, onClose }) {
+  if (!image) return null;
+
+  return (
+    <div className="dst-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="dst-diagram-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="dst-diagram-modal-header">
+          <div className="dst-diagram-modal-title">
+            <Eye size={18} className="text-cyan" />
+            <span>Slide / Page {image.slide} Diagram • AI Technical Analysis</span>
+          </div>
+          <button className="dst-modal-close" onClick={onClose} aria-label="Close modal">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="dst-diagram-modal-body">
+          <div className="dst-diagram-modal-img-col">
+            <div className="dst-diagram-modal-img-frame">
+              <img src={image.dataUrl} alt={image.name} className="dst-diagram-modal-img" />
+            </div>
+            <span className="dst-diagram-modal-img-name">{image.name}</span>
+          </div>
+
+          <div className="dst-diagram-modal-desc-col">
+            <h4 className="dst-diagram-modal-h4">Gemini Multimodal Technical Synthesis</h4>
+            <div className="dst-diagram-modal-text">
+              {image.description}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

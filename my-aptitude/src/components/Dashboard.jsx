@@ -8,7 +8,6 @@ import {
   FastForward,
   Hash,
   ChevronRight,
-  Gamepad2,
   Sparkles,
   ArrowUpRight,
   Play,
@@ -20,7 +19,11 @@ import {
   Sun,
   Moon,
   FileUp,
-  Users
+  LayoutDashboard,
+  Laptop,
+  Headphones,
+  GraduationCap,
+  Target
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -48,7 +51,7 @@ const CATEGORIES = [
     rating: 1200,
     trend: '+0 —',
     tag: 'MATH SPRINT',
-    title: 'SPRINT DUELS',
+    title: 'SPEED DRILLS',
     subtitle: 'RACE TO SOLVE 5 QUESTIONS IN 2 MINS',
     badge: '1.5x XP MULTIPLIER',
     desc: 'Percentages, Speed & Distance, Arithmetic Velocity',
@@ -60,7 +63,7 @@ const CATEGORIES = [
     name: 'PUZZLE',
     fullName: 'Pattern Recognition',
     icon: Puzzle,
-    color: '#A855F7',
+    color: '#0284C7',
     rating: 1200,
     trend: '+0 —',
     tag: 'SPATIAL PUZZLE',
@@ -76,11 +79,11 @@ const CATEGORIES = [
     name: 'LOGIC',
     fullName: 'Logical Reasoning',
     icon: Crown,
-    color: '#C6FF45',
+    color: '#10B981',
     rating: 1200,
     trend: '+0 —',
     tag: 'LOGIC BLITZ',
-    title: 'SYLLOGISM ARENA',
+    title: 'SYLLOGISM EVALUATION',
     subtitle: 'TEST RAPID CONDITIONAL DEDUCTIONS',
     badge: 'RANKED MATCH',
     desc: 'Syllogisms, Blood Relations, Seating Arrangements',
@@ -153,7 +156,7 @@ function getWeeklySummary(user) {
   return { days, totalXP, maxXP };
 }
 
-export default function Dashboard() {
+export default function Dashboard({ initialView = 'dashboard' }) {
   const { user, theme, toggleTheme, updateRole } = useAuth();
   const weeklySummary = getWeeklySummary(user);
 
@@ -165,9 +168,15 @@ export default function Dashboard() {
   const [rankInfoModalOpen, setRankInfoModalOpen] = useState(false);
   const [rankInfoInitialTab, setRankInfoInitialTab] = useState('rank');
   const [quizConfig, setQuizConfig] = useState(null); // active quiz session
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'redeem' | 'study' | 'smartstudy'
+  const [activeView, setActiveView] = useState(initialView || 'dashboard'); // 'dashboard' | 'redeem' | 'study' | 'smartstudy'
   const [activeRatingCatId, setActiveRatingCatId] = useState(null); // No rating card pre-selected on page load
   const [selectedPeer, setSelectedPeer] = useState(null); // Selected contender profile for XP & stats modal
+
+  useEffect(() => {
+    if (initialView) {
+      setActiveView(initialView);
+    }
+  }, [initialView]);
 
   const openRankInfo = (tab = 'rank') => {
     setRankInfoInitialTab(tab);
@@ -331,7 +340,7 @@ export default function Dashboard() {
     return <QuizScreen config={quizConfig} onComplete={() => setQuizConfig(null)} />;
   }
 
-  // If viewing the Rewards Vault, render the dedicated store page
+  // If viewing the Rewards Center, render the dedicated store page
   if (activeView === 'redeem') {
     return (
       <RedeemStore
@@ -447,13 +456,53 @@ export default function Dashboard() {
             <div className="top-bar-left">
               <div
                 className="matiks-brand"
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                onClick={() => {
+                  setActiveView('dashboard');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                title="Return to Modules"
               >
                 <span className="brand-title">
                   My<span className="brand-accent">Aptitude</span>
                 </span>
               </div>
             </div>
+
+            {/* Center: Top View Switcher Tabs */}
+            <nav className="dashboard-nav-tabs" aria-label="Main App Views">
+              <button
+                type="button"
+                className={`dash-nav-tab ${activeView === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setActiveView('dashboard')}
+              >
+                <LayoutDashboard size={14} />
+                <span>Modules</span>
+              </button>
+              <button
+                type="button"
+                className={`dash-nav-tab ${activeView === 'smartstudy' ? 'active' : ''}`}
+                onClick={() => setActiveView('smartstudy')}
+              >
+                <FileUp size={14} />
+                <span>Smart Study AI</span>
+              </button>
+              <button
+                type="button"
+                className={`dash-nav-tab ${activeView === 'study' ? 'active' : ''}`}
+                onClick={() => setActiveView('study')}
+              >
+                <BookOpen size={14} />
+                <span>Handbook</span>
+              </button>
+              <button
+                type="button"
+                className={`dash-nav-tab ${activeView === 'redeem' ? 'active' : ''}`}
+                onClick={() => setActiveView('redeem')}
+              >
+                <Gift size={14} />
+                <span>Rewards</span>
+              </button>
+            </nav>
 
             {/* Right: Stats + Profile Trigger */}
             <div className="top-bar-pills">
@@ -536,9 +585,19 @@ export default function Dashboard() {
         <section className="matiks-stories-section" aria-label="Contenders and Daily Event">
           <div className="matiks-stories-row">
             {/* Daily Event Glowing Circle */}
-
-
-            {/* User Profile Circle */}
+            <div
+              className="story-circle-item daily-story"
+              onClick={() => handleLaunchPractice({ category: 'math', count: 5, timed: true, isDailyChallenge: true })}
+              role="button"
+              tabIndex={0}
+              title={`Daily Sprint Challenge • ${timeLeft.hours}h ${timeLeft.minutes}m left`}
+            >
+              <div className="daily-ring-circle">
+                <Flame size={24} className="text-orange" />
+                <span className="daily-pulse-dot" />
+              </div>
+              <span className="story-label text-orange">DAILY ({timeLeft.hours}h)</span>
+            </div>
             <div
               className="story-circle-item you-story"
               onClick={() => setProfileDrawerOpen(true)}
@@ -598,7 +657,7 @@ export default function Dashboard() {
         {/* TWO-COLUMN EXPANDED WEB GRID */}
         <div className="matiks-web-dashboard-grid">
           {/* ========================================================
-              LEFT COLUMN: Training Arena & Duels (~62% on Desktop)
+              LEFT COLUMN: Practice Modules & Drills (~62% on Desktop)
               ======================================================== */}
           <div className="web-grid-left">
             {/* TODAY'S CHALLENGE SNAP CARDS */}
@@ -610,18 +669,18 @@ export default function Dashboard() {
               <div className="challenge-cards-row">
                 {/* Card 1: PUZZLE */}
                 <div
-                  className="challenge-snap-card card-purple"
+                  className="challenge-snap-card card-cyan"
                   onClick={() => handleLaunchPractice({ category: 'puzzle', count: 5, timed: true, isDailyChallenge: true })}
                   role="button"
                   tabIndex={0}
                 >
                   <div className="challenge-snap-info">
-                    <span className="challenge-mini-tag text-neon-purple">ABSTRACT LOGIC</span>
-                    <h3 className="challenge-snap-text text-neon-purple">PUZZLE</h3>
+                    <span className="challenge-mini-tag text-cyan">ABSTRACT LOGIC</span>
+                    <h3 className="challenge-snap-text text-cyan">PUZZLE</h3>
                     <span className="challenge-snap-sub">5 Questions • Sequence & Spatial</span>
                   </div>
                   <div className="challenge-snap-arrow">
-                    <ChevronRight size={22} className="text-neon-purple" />
+                    <ChevronRight size={22} className="text-cyan" />
                   </div>
                 </div>
 
@@ -644,10 +703,10 @@ export default function Dashboard() {
               </div>
             </section>
 
-            {/* DUELS & APTITUDE CATEGORY SELECTOR */}
-            <section className="matiks-section" aria-label="Aptitude Duels">
+            {/* PRACTICE & ASSESSMENT CATEGORY SELECTOR */}
+            <section className="matiks-section" aria-label="Practice Modules">
               <div className="section-title-wrap">
-                <span className="matiks-section-eyebrow">APTITUDE DUELS & DRILLS</span>
+                <span className="matiks-section-eyebrow">PRACTICE & ASSESSMENT MODULES</span>
               </div>
 
               {/* Horizontal Icon Tabs */}
@@ -672,7 +731,7 @@ export default function Dashboard() {
                 })}
               </div>
 
-              {/* Selected Featured Duel Card (SPRINT DUELS) */}
+              {/* Selected Featured Assessment Card (SPEED DRILLS) */}
               <div className="selected-duel-card">
                 <div className="duel-card-header">
                   <span
@@ -704,11 +763,11 @@ export default function Dashboard() {
             </section>
 
             {/* INDEPENDENT LEADERBOARD CARD (Directly above Study Handbook) */}
-            <section className="matiks-section leaderboard-section" aria-label="Arena Leaderboard">
+            <section className="matiks-section leaderboard-section" aria-label="Global Performance Standings">
               <div className="section-title-wrap leaderboard-header-top">
                 <div className="leaderboard-heading-row">
                   <Trophy size={16} className="text-lime" style={{ flexShrink: 0 }} />
-                  <span className="matiks-section-eyebrow">GLOBAL ARENA LEADERBOARD</span>
+                  <span className="matiks-section-eyebrow">GLOBAL PERFORMANCE STANDINGS</span>
                   <span className="leaderboard-count-pill">{rankingList.length} Ranked</span>
                 </div>
                 <button
@@ -737,7 +796,7 @@ export default function Dashboard() {
                       tabIndex={0}
                       style={{ cursor: 'pointer' }}
                     >
-                      <span className="podium-medal">🥈</span>
+                      <span className="podium-medal rank-silver">#2</span>
                       <div className="podium-avatar">
                         {rankingList[1].avatar && rankingList[1].avatar.startsWith('http') ? (
                           <img src={rankingList[1].avatar} alt={rankingList[1].name} className="podium-avatar-img" />
@@ -761,7 +820,7 @@ export default function Dashboard() {
                       tabIndex={0}
                       style={{ cursor: 'pointer' }}
                     >
-                      <span className="podium-medal">👑</span>
+                      <span className="podium-medal rank-gold"><Crown size={14} /> #1</span>
                       <div className="podium-avatar podium-avatar--gold">
                         {rankingList[0].avatar && rankingList[0].avatar.startsWith('http') ? (
                           <img src={rankingList[0].avatar} alt={rankingList[0].name} className="podium-avatar-img" />
@@ -785,7 +844,7 @@ export default function Dashboard() {
                       tabIndex={0}
                       style={{ cursor: 'pointer' }}
                     >
-                      <span className="podium-medal">🥉</span>
+                      <span className="podium-medal rank-bronze">#3</span>
                       <div className="podium-avatar">
                         {rankingList[2].avatar && rankingList[2].avatar.startsWith('http') ? (
                           <img src={rankingList[2].avatar} alt={rankingList[2].name} className="podium-avatar-img" />
@@ -802,7 +861,7 @@ export default function Dashboard() {
                   <div className="leaderboard-podium-row podium-grid-2">
                     {/* #1 Rank */}
                     <div className={`podium-card podium-1 ${rankingList[0].isYou ? 'podium-card--you' : ''}`}>
-                      <span className="podium-medal">👑</span>
+                      <span className="podium-medal rank-gold"><Crown size={14} /> #1</span>
                       <div className="podium-avatar podium-avatar--gold">
                         {rankingList[0].avatar && rankingList[0].avatar.startsWith('http') ? (
                           <img src={rankingList[0].avatar} alt={rankingList[0].name} className="podium-avatar-img" />
@@ -817,7 +876,7 @@ export default function Dashboard() {
 
                     {/* #2 Rank */}
                     <div className={`podium-card podium-2 ${rankingList[1].isYou ? 'podium-card--you' : ''}`}>
-                      <span className="podium-medal">🥈</span>
+                      <span className="podium-medal rank-silver">#2</span>
                       <div className="podium-avatar">
                         {rankingList[1].avatar && rankingList[1].avatar.startsWith('http') ? (
                           <img src={rankingList[1].avatar} alt={rankingList[1].name} className="podium-avatar-img" />
@@ -833,7 +892,7 @@ export default function Dashboard() {
                 ) : rankingList.length === 1 ? (
                   <div className="leaderboard-podium-row podium-grid-1">
                     <div className={`podium-card podium-1 podium-solo ${rankingList[0].isYou ? 'podium-card--you' : ''}`}>
-                      <span className="podium-medal">👑</span>
+                      <span className="podium-medal rank-gold"><Crown size={14} /> #1</span>
                       <div className="podium-avatar podium-avatar--gold">
                         {rankingList[0].avatar && rankingList[0].avatar.startsWith('http') ? (
                           <img src={rankingList[0].avatar} alt={rankingList[0].name} className="podium-avatar-img" />
@@ -849,7 +908,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="leaderboard-empty-state">
                     <Trophy size={32} className="text-lime" />
-                    <p>No contenders yet. Complete drills to claim #1 on the leaderboard!</p>
+                    <p>No learners ranked yet. Complete drills to claim #1 on the leaderboard!</p>
                   </div>
                 )}
 
@@ -886,11 +945,11 @@ export default function Dashboard() {
                           >
                             <div className="td-col td-rank">
                               {rankNum === 1 ? (
-                                <span className="rank-num-badge rank-gold">👑 #1</span>
+                                <span className="rank-num-badge rank-gold">#1</span>
                               ) : rankNum === 2 ? (
-                                <span className="rank-num-badge rank-silver">🥈 #2</span>
+                                <span className="rank-num-badge rank-silver">#2</span>
                               ) : rankNum === 3 ? (
-                                <span className="rank-num-badge rank-bronze">🥉 #3</span>
+                                <span className="rank-num-badge rank-bronze">#3</span>
                               ) : (
                                 <span className="rank-num-badge rank-default">#{rankNum}</span>
                               )}
@@ -1002,7 +1061,7 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* REDEEM XP VAULT BANNER (Under Training Modules & Numerical Velocity) */}
+            {/* REDEEM XP REWARDS BANNER (Under Training Modules & Numerical Velocity) */}
             <div
               className="modules-redeem-banner"
               onClick={() => setActiveView('redeem')}
@@ -1166,10 +1225,10 @@ export default function Dashboard() {
                 <div className="stat-overview-box">
                   <div className="stat-overview-left">
                     <span className="stat-big-num">{user?.sessionsCount ?? 0}</span>
-                    <span className="stat-sub-label">DRILLS PLAYED</span>
+                    <span className="stat-sub-label">SESSIONS COMPLETED</span>
                   </div>
-                  <div className="stat-icon-badge badge-purple">
-                    <Gamepad2 size={18} />
+                  <div className="stat-icon-badge badge-blue">
+                    <Target size={18} />
                   </div>
                 </div>
               </div>
@@ -1220,7 +1279,7 @@ export default function Dashboard() {
                     Week Total: {weeklySummary.totalXP} XP
                   </span>
                   <span className="chart-status-tag">
-                    {user?.streak ? `🔥 ${user.streak} Day Streak` : 'Daily Adaptive Goal'}
+                    {user?.streak ? `${user.streak} Day Streak` : 'Daily Adaptive Goal'}
                   </span>
                 </div>
               </div>
@@ -1249,10 +1308,10 @@ export default function Dashboard() {
                     Upload any PDF, DOCX, or PPTX and instantly generate MCQs, Cheatsheets, Flashcards, and Mind Maps powered by AI.
                   </p>
                   <div className="ssh-tools-row">
-                    <span className="ssh-tool-chip">🎯 MCQ Practice</span>
-                    <span className="ssh-tool-chip">📋 Cheatsheet</span>
-                    <span className="ssh-tool-chip">🧠 Flashcards</span>
-                    <span className="ssh-tool-chip">🗺️ Mind Map</span>
+                    <span className="ssh-tool-chip">MCQ Practice</span>
+                    <span className="ssh-tool-chip">Cheatsheet</span>
+                    <span className="ssh-tool-chip">Flashcards</span>
+                    <span className="ssh-tool-chip">Mind Map</span>
                   </div>
                 </div>
                 <div className="ssh-card-footer">
@@ -1265,7 +1324,7 @@ export default function Dashboard() {
                     }}
                     title="Launch MCQ Practice with 10-15 Questions"
                   >
-                    <span>🎯 MCQ Practice (10–15 Qs)</span>
+                    <span>MCQ Practice (10–15 Qs)</span>
                   </button>
                   <button
                     type="button"
@@ -1294,9 +1353,9 @@ export default function Dashboard() {
                 <div className="redeem-card-header">
                   <div className="redeem-badge">
                     <Gift size={13} className="text-lime" />
-                    <span>REWARDS VAULT</span>
+                    <span>REWARDS CENTER</span>
                   </div>
-                  <span className="redeem-count-pill">10 High-XP Trophies</span>
+                  <span className="redeem-count-pill">10 High-XP Rewards</span>
                 </div>
 
                 <div className="redeem-card-body">
@@ -1310,20 +1369,20 @@ export default function Dashboard() {
                   {/* High XP Items Preview Badges */}
                   <div className="redeem-preview-chips">
                     <div className="redeem-chip">
-                      <span className="redeem-chip-emoji">💻</span>
+                      <Laptop size={14} className="text-cyan" />
                       <span>M3 MacBook (50K XP)</span>
                     </div>
                     <div className="redeem-chip">
-                      <span className="redeem-chip-emoji">🎧</span>
+                      <Headphones size={14} className="text-cyan" />
                       <span>Sony XM5 (16K XP)</span>
                     </div>
                     <div className="redeem-chip">
-                      <span className="redeem-chip-emoji">🎓</span>
+                      <GraduationCap size={14} className="text-cyan" />
                       <span>FAANG 1-on-1 (4K XP)</span>
                     </div>
                     <div className="redeem-chip">
-                      <span className="redeem-chip-emoji">🧥</span>
-                      <span>Cyber Hoodie (4.5K XP)</span>
+                      <Award size={14} className="text-cyan" />
+                      <span>Signature Hoodie (4.5K XP)</span>
                     </div>
                   </div>
                 </div>

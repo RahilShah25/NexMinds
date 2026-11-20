@@ -1,14 +1,9 @@
 import React from 'react';
 import { 
   Trophy, 
-  BookOpen, 
-  Gift, 
-  Award, 
-  Command, 
-  ShieldCheck, 
-  ArrowUp,
   Sparkles,
-  Zap
+  ShieldCheck,
+  ArrowUp
 } from 'lucide-react';
 import './Footer.css';
 
@@ -36,7 +31,7 @@ export default function Footer({
               </span>
             </div>
             <p className="footer-tagline">
-              Adaptive Aptitude Arena designed for high-velocity exam prep, blitz reasoning, and mental calculation drills.
+              Adaptive Aptitude Platform designed for high-velocity exam prep, fast reasoning, and mental calculation drills.
             </p>
             <div className="footer-db-badge">
               <span className="db-live-indicator" />
@@ -78,7 +73,7 @@ export default function Footer({
           <div className="footer-col">
             <h4 className="footer-heading">
               <Sparkles size={14} className="text-cyan" />
-              <span>Arenas & Vault</span>
+              <span>Modules & Rewards</span>
             </h4>
             <ul className="footer-links">
               <li>
@@ -131,7 +126,7 @@ export default function Footer({
         <div className="footer-bottom-bar">
           <div className="footer-bottom-left">
             <p className="copyright-text">
-              © {new Date().getFullYear()} NexMinds Aptitude Arena. All rights reserved.
+              © {new Date().getFullYear()} NexMinds Aptitude Platform. All rights reserved.
             </p>
             <span className="footer-status-pill">Production v2.4 • Dynamic Cloud Sync</span>
           </div>

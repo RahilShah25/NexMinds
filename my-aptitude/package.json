@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^14.14.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.55.0",
     "mammoth": "^1.13.0",

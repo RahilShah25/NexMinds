@@ -1,0 +1,9 @@
+{
+  "name": "nexminds",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd my-aptitude && npm install && npm run build",
+    "start": "cd my-aptitude && npm run preview"
+  }
+}

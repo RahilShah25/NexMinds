@@ -237,7 +237,7 @@ export default function ProfileDrawer({
             <div className="drawer-role-header">
               <span className="drawer-role-title">WORKSPACE ROLE</span>
               <span className="drawer-role-badge">
-                {user?.role === 'teacher' ? '👨‍🏫 Teacher' : '🎓 Student'}
+                {user?.role === 'teacher' ? 'Instructor' : 'Learner'}
               </span>
             </div>
             <div className="drawer-role-btn-group">
@@ -246,14 +246,14 @@ export default function ProfileDrawer({
                 className={`drawer-role-toggle-btn ${user?.role === 'teacher' ? 'active' : ''}`}
                 onClick={() => updateRole?.('teacher')}
               >
-                👨‍🏫 Teacher Mode
+                Instructor Mode
               </button>
               <button
                 type="button"
                 className={`drawer-role-toggle-btn ${user?.role === 'student' ? 'active' : ''}`}
                 onClick={() => updateRole?.('student')}
               >
-                🎓 Student Mode
+                Learner Mode
               </button>
             </div>
           </div>
@@ -545,7 +545,7 @@ export default function ProfileDrawer({
                   <span className="dr-mini-lbl">Math</span>
                 </div>
                 <div className="dr-mini-item">
-                  <span className="dr-mini-val" style={{ color: '#A855F7' }}>{user?.ratings?.puzzle ?? 1200}</span>
+                  <span className="dr-mini-val" style={{ color: '#0284C7' }}>{user?.ratings?.puzzle ?? 1200}</span>
                   <span className="dr-mini-lbl">Puzzle</span>
                 </div>
                 <div className="dr-mini-item">
@@ -626,7 +626,7 @@ export default function ProfileDrawer({
               <ChevronRight size={18} className="menu-chevron" />
             </button>
 
-            {/* XP Rewards Vault */}
+            {/* Rewards Center */}
             <button
               className="drawer-menu-item"
               onClick={() => {
@@ -636,11 +636,11 @@ export default function ProfileDrawer({
               id="drawer-rewards-btn"
             >
               <div className="drawer-menu-left">
-                <div className="menu-icon-box" style={{ background: 'rgba(198, 255, 69, 0.12)', color: '#C6FF45' }}>
+                <div className="menu-icon-box" style={{ background: 'rgba(37, 99, 235, 0.12)', color: '#2563EB' }}>
                   <Gift size={18} />
                 </div>
                 <div className="menu-text">
-                  <span className="menu-title">XP Rewards Vault</span>
+                  <span className="menu-title">Rewards Center</span>
                   <span className="menu-subtitle">Redeem tech, gear & FAANG mentorship</span>
                 </div>
               </div>
@@ -720,12 +720,12 @@ export default function ProfileDrawer({
             id="logout-btn"
             className="drawer-logout-btn"
             onClick={handleLogout}
-            aria-label="Log out"
+            aria-label="Log out or Return to Home"
           >
             <LogOut size={18} />
-            <span>Log out</span>
+            <span>Sign Out &amp; Return Home</span>
           </button>
-          <span className="drawer-version-tag">MyAptitude v0.3 • Matiks Edition</span>
+          <span className="drawer-version-tag">MyAptitude • NexMinds Edition</span>
         </div>
       </aside>
     </div>

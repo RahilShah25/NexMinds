@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   ArrowLeft, BookOpen, ChevronRight, ChevronLeft, Bookmark, 
   Lightbulb, CheckCircle2, AlertTriangle, Zap, Check, ArrowRight,
-  HelpCircle, Compass, Sparkles, Share2
+  HelpCircle, Compass, Sparkles, Share2, Hash, Puzzle, Crown
 } from 'lucide-react';
 import './StudyBook.css';
 
@@ -11,7 +11,7 @@ const CHAPTERS = [
   {
     id: 'math',
     title: 'Quantitative & Speed Math',
-    emoji: '📐',
+    icon: Hash,
     color: '#FF9500',
     topics: [
       {
@@ -148,8 +148,8 @@ const CHAPTERS = [
   {
     id: 'puzzle',
     title: 'Pattern & Sequence Logic',
-    emoji: '🧩',
-    color: '#A855F7',
+    icon: Puzzle,
+    color: '#0284C7',
     topics: [
       {
         id: 'seq-1',
@@ -231,8 +231,8 @@ const CHAPTERS = [
   {
     id: 'logic',
     title: 'Deductive & Syllogistic Logic',
-    emoji: '👑',
-    color: '#C6FF45',
+    icon: Crown,
+    color: '#10B981',
     topics: [
       {
         id: 'syl-1',
@@ -293,7 +293,7 @@ const CHAPTERS = [
   {
     id: 'memory',
     title: 'Numerical Agility & Quick Tricks',
-    emoji: '⚡',
+    icon: Zap,
     color: '#38BDF8',
     topics: [
       {
@@ -409,7 +409,7 @@ export default function StudyBook({ onBack }) {
   };
 
   const handleShareSolution = async () => {
-    const text = `📖 Aptitude Concept: ${currentConcept.topic}\n"${currentConcept.q}"\n\n💡 Solution: ${currentConcept.options[currentConcept.answer]}\nFormula: ${currentConcept.formula}\n\nStudy without pressure on MyAptitude!`;
+    const text = `Aptitude Concept: ${currentConcept.topic}\n"${currentConcept.q}"\n\nSolution: ${currentConcept.options[currentConcept.answer]}\nFormula: ${currentConcept.formula}\n\nStudy on MyAptitude!`;
     try {
       if (navigator.share) await navigator.share({ title: 'Aptitude Concept', text });
       else await navigator.clipboard.writeText(text);
@@ -456,6 +456,7 @@ export default function StudyBook({ onBack }) {
         <nav className="sb-chapters-nav" aria-label="Chapters">
           {CHAPTERS.map((chap) => {
             const isActive = chap.id === selectedChapId;
+            const ChapIcon = chap.icon || BookOpen;
             return (
               <button
                 key={chap.id}
@@ -464,7 +465,7 @@ export default function StudyBook({ onBack }) {
                 onClick={() => handleSelectChapter(chap.id)}
                 style={{ '--chap-color': chap.color }}
               >
-                <span className="sb-chap-emoji">{chap.emoji}</span>
+                <span className="sb-chap-icon"><ChapIcon size={16} /></span>
                 <span className="sb-chap-text">{chap.title}</span>
                 <span className="sb-chap-count">{chap.topics.length}</span>
               </button>
@@ -561,7 +562,7 @@ export default function StudyBook({ onBack }) {
             {/* If not yet revealed, offer direct reveal button */}
             {!showSolution && (
               <div className="sb-unrevealed-cta">
-                <span className="sb-hint-text">💡 Tap any option to test yourself, or</span>
+                <span className="sb-hint-text">Tap any option to test yourself, or</span>
                 <button 
                   type="button" 
                   className="sb-reveal-btn"

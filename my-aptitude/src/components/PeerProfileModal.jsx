@@ -50,7 +50,7 @@ export default function PeerProfileModal({ peer, isOpen, onClose, onChallenge, r
 
   const getTier = (points) => {
     if (points >= 2800) return { tier: 'Diamond Master', color: '#38BDF8', badge: 'DIAMOND' };
-    if (points >= 2600) return { tier: 'Platinum Tier', color: '#A855F7', badge: 'PLATINUM' };
+    if (points >= 2600) return { tier: 'Platinum Tier', color: '#0284C7', badge: 'PLATINUM' };
     if (points >= 2400) return { tier: 'Gold Tier', color: '#F59E0B', badge: 'GOLD' };
     if (points >= 1000) return { tier: 'Silver Tier', color: '#94A3B8', badge: 'SILVER' };
     return { tier: 'Bronze Tier', color: '#CD7F32', badge: 'BRONZE' };
@@ -83,13 +83,13 @@ export default function PeerProfileModal({ peer, isOpen, onClose, onChallenge, r
         <div className="peer-modal-header">
           <div className="peer-header-tag">
             <Sparkles size={13} className="text-lime" />
-            <span>GLOBAL ARENA CONTENDER</span>
+            <span>GLOBAL RANKED LEARNER</span>
           </div>
           <button 
             type="button" 
             className="peer-modal-close" 
             onClick={onClose} 
-            aria-label="Close contender profile"
+            aria-label="Close learner profile"
           >
             <X size={18} />
           </button>
@@ -203,7 +203,7 @@ export default function PeerProfileModal({ peer, isOpen, onClose, onChallenge, r
               <span className="peer-cat-lbl">Math Sprint</span>
             </div>
             <div className="peer-cat-rating-card">
-              <span className="peer-cat-val" style={{ color: '#A855F7' }}>{peerRatings.puzzle || 1200}</span>
+              <span className="peer-cat-val" style={{ color: '#0284C7' }}>{peerRatings.puzzle || 1200}</span>
               <span className="peer-cat-lbl">Patterns</span>
             </div>
             <div className="peer-cat-rating-card">
@@ -224,8 +224,8 @@ export default function PeerProfileModal({ peer, isOpen, onClose, onChallenge, r
             className="peer-challenge-btn"
             onClick={() => onChallenge?.('math')}
           >
-            <Swords size={18} />
-            <span>Challenge in Aptitude Duel</span>
+            <Target size={18} />
+            <span>Start Benchmark Practice</span>
           </button>
         </div>
       </div>

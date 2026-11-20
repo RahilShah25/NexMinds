@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd my-aptitude && npm install && npm run build",
+  "outputDirectory": "my-aptitude/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+

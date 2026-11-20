@@ -188,6 +188,91 @@ REQUIREMENTS:
   throw lastError || new Error('AI Visual OCR was unable to transcribe the visual document.');
 }
 
+// ─── Gemini Multimodal Diagram & Figure Visual Analyst ───────────────────────
+// Extracts deep architectural, mathematical, and algorithmic meaning from diagrams
+// found inside presentations (PPT/PPTX), PDFs, and uploaded images.
+export async function analyzeDiagramWithGemini({ base64Data, mimeType = 'image/png', contextLabel = 'Slide Diagram', onStatus }) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('NO_API_KEY');
+  }
+
+  const cleanBase64 = String(base64Data || '').replace(/^data:[^;]+;base64,/, '').trim();
+  if (!cleanBase64) {
+    throw new Error('No image data provided for diagram analysis.');
+  }
+
+  const prompt = `You are a distinguished technical diagram, chart, and architectural vision analyst for competitive exams and engineering curricula.
+Analyze this technical visual / diagram / schematic (${contextLabel}) with utmost academic and pedagogical rigor.
+
+MISSION & OUTPUT REQUIREMENTS:
+1. Concept & Subject Classification: State the exact technical concept, system, algorithm, circuit, data structure, or biological/physical mechanism illustrated (e.g., "MIPS 5-Stage Pipelining Data Hazard Unit", "Relational Database Normalization Schema (3NF/BCNF)", "Dijkstra Shortest Path Graph Execution", "DNA Transcription & Polymerase Action", "Op-Amp Inverting Amplifier Frequency Response").
+2. Component Breakdown & Flow: Explicitly describe key components, directional arrows, state transitions, inputs, outputs, formulas, and labels visible in the figure.
+3. Critical Takeaways & Exam Principles: Detail 2 to 4 high-yield exam takeaways directly grounded in this diagram (e.g. how data flows, formulas shown, relationships between nodes, boundary constraints).
+
+CRITICAL EXCLUSIONS & PURITY RULES:
+- STRICTLY DO NOT mention professor/faculty/teacher names, instructors, or authors.
+- STRICTLY DO NOT mention course codes (e.g. CS301, 21CS54), course titles, subject codes, departments, colleges, or universities.
+- STRICTLY DO NOT mention slide numbers, exam marks, roll numbers, or presentation template branding.
+- Output ONLY the clean, authoritative technical visual analysis.`;
+
+  let lastError = null;
+
+  for (let i = 0; i < CANDIDATE_MODELS.length; i++) {
+    const model = CANDIDATE_MODELS[i];
+    try {
+      const cleanModelName = model.replace(/^models\//, '');
+      onStatus?.(`AI Vision analyzing ${contextLabel} (${cleanModelName})...`);
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: cleanBase64,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.15,
+          maxOutputTokens: 2048,
+        },
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined,
+      });
+
+      if (!res.ok) {
+        continue;
+      }
+
+      const data = await res.json();
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const text = parts.map((p) => p.text || '').filter(Boolean).join('');
+
+      if (text && text.trim().length > 20) {
+        return { text: text.trim(), modelUsed: cleanModelName };
+      }
+    } catch (err) {
+      console.warn(`[analyzeDiagram] Model ${model} notice:`, err.message);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('Diagram visual analysis unavailable.');
+}
+
 // ─── Smart Multi-Page Document Sampler ─────────────────────────────────────────
 // Gemini 3.5/3.8 Flash have a 1,000,000 token context window (~750,000 words).
 // We permit up to 250,000 characters without trimming, thoroughly analyzing 100% of 100+ page documents.
@@ -416,38 +501,45 @@ export function shuffleQuestionOptions(questions) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 1. QUIZ / MCQ GENERATION (Guaranteed 10 to 15 Questions)
+// 1. QUIZ / MCQ GENERATION (Guaranteed 10 to 20 Questions Grounded in Text & Diagrams)
 // ═══════════════════════════════════════════════════════════════════════════════
-export async function generateQuiz(text, count = 12, onStatus) {
+export async function generateQuiz(text, count = 15, onStatus) {
   const trimmed = trimText(text);
-  const targetCount = Math.min(15, Math.max(10, count || 12));
+  const targetCount = Math.min(20, Math.max(10, count || 15));
+
+  const hasDiagramAnalysis = /\[(?:Slide|Page)\s+\d+\s+Visual Diagram Analysis\]/i.test(trimmed);
 
   const systemInstruction = `You are a distinguished University Professor, Psychometric Assessment Architect, and Senior Examiner.
-Your sole mission is to generate an authentic, rigorous, high-yield multiple-choice examination grounded STRICTLY and EXCLUSIVELY in the educational subject matter of the provided document.
+Your sole mission is to generate an authentic, rigorous, high-yield multiple-choice examination grounded STRICTLY and EXCLUSIVELY in the educational subject matter of the provided document and its analyzed visual diagrams.
 
-MANDATORY COUNT CONSTRAINT (10 TO 15 QUESTIONS):
-You MUST generate between 10 and 15 multiple-choice questions (target ${targetCount} questions, minimum 10 questions).
+MANDATORY COUNT CONSTRAINT (10 TO 20 QUESTIONS):
+You MUST generate between 10 and 20 multiple-choice questions (target exactly ${targetCount} questions, minimum 10 questions, maximum 20 questions).
 Do NOT stop after 1 or 2 questions. Every major concept, methodology, definition, and mechanism across the whole document must be tested.
+
+VISUAL DIAGRAM & FIGURE GROUNDING (CRITICAL):
+${hasDiagramAnalysis ? '- The document contains technical diagrams and figures extracted from slides/pages marked [Slide X Visual Diagram Analysis] or [Page X Visual Diagram Analysis]. You MUST formulate dedicated conceptual questions testing the architectures, flowcharts, data paths, state transitions, schematic relationships, or formulas depicted in those analyzed diagrams!' : '- If any diagram or figure analyses appear in the text, formulate dedicated questions testing the mechanisms, structures, or relationships depicted in them.'}
 
 MANDATORY FULL-DOCUMENT SCANNING:
 You MUST thoroughly scan and analyze the entire document from start to finish before generating questions. Questions must be distributed proportionally across all sections and concepts from beginning to end.
 
-CRITICAL PURITY CONTRACT (UNWANTED DETAILS MANDATORY EXCLUSION):
-- NEVER mention or test on book names, textbook titles, reference readings, or publishers (e.g. Pearson, McGraw-Hill, Wiley).
-- NEVER mention or test on author names (e.g., Silberschatz, Galvin, Tanenbaum, Cormen, Kurose, Forouzan, Stallings, etc.) or teacher/faculty/instructor/guide names (e.g. "Dr. ...", "Prof. ...", "Prepared by ...").
-- NEVER mention or test on course codes (e.g. CS501, 21CS54), course names, subject names, college/university names, exam paper marks, roll numbers, or test dates.
+CRITICAL PURITY CONTRACT (STRICT EXCLUSION OF ADMINISTRATIVE & UNWANTED INFO):
+- NEVER mention or test on book names, textbook titles, reference readings, or publishers (e.g. Pearson, McGraw-Hill, Wiley, Prentice-Hall, Cengage, Springer).
+- NEVER mention or test on faculty names, professor names, teacher names, instructors, guides, authors (e.g., Silberschatz, Galvin, Tanenbaum, Cormen, Kurose, Forouzan, Stallings, etc.), or "Prepared by ...".
+- NEVER mention or test on course codes (e.g. CS501, 21CS54, BCS301), course titles, subject names, college/university names, departments, accreditation (NBA, NAAC, Autonomous), semester, branch, scheme, or regulation.
+- NEVER mention or test on exam administration metadata: maximum marks, duration, roll numbers, USN, register numbers, dates, or question paper codes.
 - NEVER mention or use Chapter names/numbers, Unit numbers, or Module markers (e.g. NEVER output "Chapter 1", "Chp 2", "Unit 3", "Module 4" as questions, topics, or options).
 - NEVER mention or test on Course Outcomes (CO1, CO2, CO3...), Program Outcomes (PO...), or Bloom's taxonomy levels (BL/L1/L2).
-- The "topic" field MUST be the pure subject concept name itself (e.g., "Virtual Memory", "Deadlock Prevention", "Chemical Kinetics", "Ohm's Law"), NEVER a chapter or module label.
+- NEVER reference slide numbers in isolation (e.g. do NOT say "According to slide 4..."). Instead, refer to the underlying concept or diagram (e.g. "In the 5-stage instruction pipeline data hazard resolution diagram...").
+- The "topic" field MUST be the pure subject concept name itself (e.g., "Virtual Memory", "Deadlock Prevention", "Chemical Kinetics", "Ohm's Law", "Pipelining Hazards"), NEVER a chapter or module label.
 - FOCUS 100% EXCLUSIVELY on pure conceptual, scientific, technical, and educational knowledge, mechanisms, formulas, definitions, and problem-solving principles.
 
 CORE PEDAGOGICAL RULES:
-1. STRICT GROUNDING: Every question, option, and explanation must be directly verifiable against the provided source text. Never invent facts, cite external trivia, or make ungrounded assumptions.
-2. FULL-DOCUMENT COVERAGE: Distribute questions proportionally across the entire document (early foundational concepts, core middle methodologies/mechanisms, and final conclusions/applications).
+1. STRICT GROUNDING: Every question, option, and explanation must be directly verifiable against the provided source text and diagram analyses. Never invent facts, cite external trivia, or make ungrounded assumptions.
+2. FULL-DOCUMENT COVERAGE: Distribute questions proportionally across the entire document (early foundational concepts, core middle methodologies/mechanisms, diagrams, and final conclusions/applications).
 3. COGNITIVE BALANCE: Include a balanced mix:
    - 30% Foundational conceptual understanding & definitions
    - 40% Applied mechanisms, processes, workflows, and calculations
-   - 30% Analytical reasoning, edge cases, and cause-and-effect relationships
+   - 30% Analytical reasoning, edge cases, diagram relationships, and cause-and-effect
 4. PLAUSIBLE DISTRACTORS: All 3 incorrect choices must be sophisticated, authentic domain-specific concepts or common misconceptions, not humorous or obviously incorrect distractors.
 5. OPTION PARITY: All 4 options must be similar in length, grammatical structure, and tone.
 6. RANDOMIZED POSITION DISTRIBUTION: The correct option MUST be evenly and randomly distributed among choices A (0), B (1), C (2), and D (3) across the exam (roughly 25% each). NEVER place the correct option at position A (index 0) for every question!
@@ -455,10 +547,11 @@ CORE PEDAGOGICAL RULES:
 8. RIGOROUS EXPLANATION: Provide a 2-3 sentence explanation citing the document's facts to explain why the right answer is correct and why other options are invalid.
 9. TOPIC TAGGING: Provide a concise pure concept string for "topic" (e.g. "Address Translation", "Photosynthesis", "Binary Trees"), NEVER including "Chapter", "Unit", "CO", book titles, or author names.`;
 
-  const prompt = `Analyze the document thoroughly from beginning to end and generate exactly ${targetCount} high-yield multiple-choice questions (minimum 10 to 15 questions).
+  const prompt = `Analyze the document thoroughly from beginning to end and generate exactly ${targetCount} high-yield multiple-choice questions (minimum 10 to 20 questions).
+${hasDiagramAnalysis ? 'Make sure several questions directly test the technical diagrams, architectures, or workflows analyzed in the presentation/document.' : ''}
 Ensure that the correct answer is randomly positioned across A, B, C, and D — DO NOT place the correct answer as option A for all questions.
 
-CRITICAL: Return at least 10 to 15 questions in the "questions" array. Never return only 1 question.
+CRITICAL: Return at least 10 to 20 questions in the "questions" array. Never return only 1 or 2 questions.
 
 SCHEMA (Return valid JSON only):
 {
@@ -474,12 +567,12 @@ SCHEMA (Return valid JSON only):
         "Plausible Distractor D"
       ],
       "correct": 1,
-      "explanation": "2-3 sentence justification citing facts from the source text."
+      "explanation": "2-3 sentence justification citing facts from the source text or analyzed diagram."
     },
     {
       "id": 2,
       "topic": "Second Conceptual Area",
-      "question": "Second clear conceptual question testing mechanisms in later sections?",
+      "question": "Second clear conceptual question testing mechanisms in later sections or diagrams?",
       "options": [
         "Distractor A",
         "Distractor B",
@@ -496,7 +589,7 @@ DOCUMENT CONTENT:
 ${trimmed}`;
 
   try {
-    onStatus?.(`Analyzing full document & structuring ${targetCount} exam questions...`);
+    onStatus?.(`Analyzing full document & structuring ${targetCount} exam questions (10–20 MCQs)...`);
     const { text: raw, modelUsed } = await callGemini(prompt, systemInstruction, onStatus, true);
     const parsed = safeParseJSON(raw);
 
@@ -535,11 +628,11 @@ ${trimmed}`;
         };
       });
 
-      // User requirement: minimum 10 to 15 questions. If model returned fewer than 10, supplement to target
+      // User requirement: 10 to 20 questions. If model returned fewer than 10, supplement up to targetCount
       if (normalized.length < 10) {
         normalized = supplementQuestions(text, normalized, targetCount);
-      } else if (normalized.length > 15) {
-        normalized = normalized.slice(0, 15);
+      } else if (normalized.length > 20) {
+        normalized = normalized.slice(0, 20);
       }
 
       // Programmatically shuffle options so correct answers are evenly spread across A, B, C, D
@@ -558,10 +651,10 @@ ${trimmed}`;
   return fallback;
 }
 
-// ─── Question Synthesizer & Supplementer (Guarantees 10 to 15 Questions) ───────
-export function supplementQuestions(text, baseQuestions = [], targetCount = 12) {
+// ─── Question Synthesizer & Supplementer (Guarantees 10 to 20 Questions) ───────
+export function supplementQuestions(text, baseQuestions = [], targetCount = 15) {
   const result = [...baseQuestions];
-  const desired = Math.min(15, Math.max(10, targetCount || 12));
+  const desired = Math.min(20, Math.max(10, targetCount || 15));
 
   // Extract clean academic sentences & concepts from the document
   const rawSentences = text
@@ -577,19 +670,14 @@ export function supplementQuestions(text, baseQuestions = [], targetCount = 12) 
   const pool = techTerms.length >= 8 ? techTerms : words;
 
   let attempt = 0;
-  while (result.length < desired && attempt < 60) {
+  while (result.length < desired && attempt < 200) {
     attempt++;
     const sIdx = (result.length + attempt) % Math.max(1, rawSentences.length);
     const sentence = rawSentences[sIdx] || 'Foundational principles of the subject matter are systematically developed throughout the text.';
     const sWords = sentence.split(/\s+/).filter((w) => w.length > 4 && /^[a-zA-Z]+$/.test(w));
 
-    const keyWord = sWords[Math.floor(sWords.length / 2)] || pool[result.length % pool.length] || 'Principle';
+    const keyWord = sWords[(result.length + attempt) % Math.max(1, sWords.length)] || pool[(result.length + attempt) % Math.max(1, pool.length)] || 'Principle';
     
-    // Check if this concept is already tested
-    if (result.some((q) => q.question.includes(sentence.slice(0, 30)))) {
-      continue;
-    }
-
     const distractors = pool
       .filter((w) => w.toLowerCase() !== keyWord.toLowerCase())
       .slice((attempt * 2) % Math.max(1, pool.length - 4), ((attempt * 2) % Math.max(1, pool.length - 4)) + 3);
@@ -614,6 +702,11 @@ export function supplementQuestions(text, baseQuestions = [], targetCount = 12) 
       expText = `Derived from the core document analysis regarding ${keyWord}.`;
     }
 
+    // Ensure we don't add duplicate question text
+    if (result.some((q) => q.question === qText)) {
+      continue;
+    }
+
     result.push({
       id: result.length + 1,
       topic: `${keyWord.charAt(0).toUpperCase() + keyWord.slice(1)} Concept`,
@@ -628,8 +721,8 @@ export function supplementQuestions(text, baseQuestions = [], targetCount = 12) 
   return result.slice(0, desired).map((q, i) => ({ ...q, id: i + 1 }));
 }
 
-export function generateQuizFallback(text, count = 12) {
-  const targetCount = Math.min(15, Math.max(10, count || 12));
+export function generateQuizFallback(text, count = 15) {
+  const targetCount = Math.min(20, Math.max(10, count || 15));
   const questions = supplementQuestions(text, [], targetCount);
   return shuffleQuestionOptions(questions);
 }
@@ -897,7 +990,7 @@ REQUIREMENTS:
 1. Root: The central core topic or subject of the document (pure concept title).
 2. Branches (5 to 7): Represent the major conceptual pillars.
 3. Colors: Assign distinct, vibrant colors from this palette:
-   ["#FF9500", "#A855F7", "#38BDF8", "#C6FF45", "#FF4444", "#22D3EE", "#EC4899"]
+   ["#FF9500", "#0284C7", "#38BDF8", "#10B981", "#FF4444", "#22D3EE", "#EC4899"]
 4. Children (3 to 5): Subtopics and conceptual components under each branch.
 5. Leaves (2 to 3): Granular examples, rules, formulas, or specific details under each subtopic.`;
 
@@ -968,7 +1061,7 @@ function generateMindMapFallback(text) {
     .map((p) => p.trim())
     .filter((p) => p.length > 30);
 
-  const colors = ['#FF9500', '#A855F7', '#38BDF8', '#C6FF45', '#FF4444', '#22D3EE'];
+  const colors = ['#FF9500', '#0284C7', '#38BDF8', '#10B981', '#FF4444', '#22D3EE'];
   const branchCount = Math.min(6, Math.max(3, Math.floor(paragraphs.length / 3)));
 
   const words = text.match(/\b[A-Z][a-z]{3,}\b/g) || [];

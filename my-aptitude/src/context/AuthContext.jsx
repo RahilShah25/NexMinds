@@ -25,6 +25,14 @@ function loadPersistedUser() {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed) {
+      // Discard previous guest session — guest login is permanently removed
+      if (parsed.isGuest || (typeof parsed.id === 'string' && parsed.id.startsWith('guest-'))) {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          sessionStorage.removeItem(STORAGE_KEY);
+        } catch {}
+        return null;
+      }
       if (!parsed.ratings || Object.keys(parsed.ratings).length === 0) {
         const savedRatings = localStorage.getItem(`myaptitude_ratings_${parsed.id}`);
         if (savedRatings) {
@@ -365,53 +373,39 @@ export function AuthProvider({ children }) {
 
   const login = (userData) => {
     const profile = {
-      id: `demo-${Date.now()}`,
-      name: userData.name || userData.email?.split('@')[0] || 'Thinker',
-      email: userData.email,
-      xp: 0,
-      level: 1,
-      streak: 0,
+      id: userData?.id || `user-${Date.now()}`,
+      name: userData?.name || userData?.email?.split('@')[0] || 'Thinker',
+      email: userData?.email || null,
+      role: userData?.role || localStorage.getItem('myaptitude_selected_role') || 'student',
+      xp: userData?.xp ?? 0,
+      level: userData?.level ?? 1,
+      streak: userData?.streak ?? 0,
       streakFreeze: 1,
       dailyGoal: 100,
-      todayXP: 0,
-      accuracy: 100,
-      sessionsCount: 0,
-      ratings: DEFAULT_RATINGS,
-      ratingTrends: DEFAULT_TRENDS,
+      todayXP: userData?.todayXP ?? 0,
+      accuracy: userData?.accuracy ?? 100,
+      sessionsCount: userData?.sessionsCount ?? 0,
+      ratings: userData?.ratings || DEFAULT_RATINGS,
+      ratingTrends: userData?.ratingTrends || DEFAULT_TRENDS,
       soundEnabled: true,
       motionEnabled: true,
-      joinedAt: new Date().toISOString(),
-      isDemo: true,
+      joinedAt: userData?.joinedAt || new Date().toISOString(),
+      isDemo: false,
+      isGuest: false,
     };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    } catch {}
     setUser(profile);
     setIsGuest(false);
     return profile;
   };
 
+  // Guest login permanently removed per user specification
   const continueAsGuest = () => {
-    const guest = {
-      id: `guest-${Date.now()}`,
-      name: 'Guest Thinker',
-      email: null,
-      role: localStorage.getItem('myaptitude_selected_role') || 'student',
-      xp: 0,
-      level: 1,
-      streak: 0,
-      streakFreeze: 1,
-      dailyGoal: 100,
-      todayXP: 0,
-      accuracy: 100,
-      sessionsCount: 0,
-      ratings: DEFAULT_RATINGS,
-      ratingTrends: DEFAULT_TRENDS,
-      soundEnabled: true,
-      motionEnabled: true,
-      isDemo: true,
-      isGuest: true,
-    };
-    setUser(guest);
-    setIsGuest(true);
-    return guest;
+    console.warn('[Auth] Guest login has been permanently disabled.');
+    return null;
   };
 
   const updateRole = (newRole) => {

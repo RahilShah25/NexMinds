@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   ArrowLeft, Gift, Zap, Sparkles, Check, Copy, Lock, 
-  ChevronRight, X, CheckCircle2, AlertCircle, ShoppingBag
+  ChevronRight, X, CheckCircle2, AlertCircle, ShoppingBag,
+  Laptop, Watch, Headphones, Keyboard, Coffee, Shirt,
+  GraduationCap, BookOpen, CreditCard, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './RedeemStore.css';
@@ -22,7 +24,7 @@ function StoreConfettiCanvas() {
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
 
-    const colors = ['#C6FF45', '#FFD700', '#38BDF8', '#A855F7', '#FF6B6B', '#F59E0B', '#FFFFFF'];
+    const colors = ['#2563EB', '#60A5FA', '#38BDF8', '#0284C7', '#10B981', '#F59E0B', '#FFFFFF'];
 
     const particles = Array.from({ length: 100 }, () => ({
       x: (Math.random() * 0.9 + 0.05) * width,
@@ -93,12 +95,12 @@ const STORE_PRODUCTS = [
     title: 'M3 MacBook Air 13"',
     subtitle: '16GB Unified RAM • 512GB SSD • Space Gray',
     category: 'tech',
-    categoryLabel: 'ULTIMATE TROPHY',
+    categoryLabel: 'ULTIMATE REWARD',
     costXP: 50000,
-    emoji: '💻',
-    color: '#C6FF45',
+    icon: Laptop,
+    color: '#2563EB',
     stock: 1,
-    desc: 'The crowning achievement of MyAptitude grandmasters. Blazing performance for high-stakes problem solvers.',
+    desc: 'The crowning achievement of MyAptitude top performers. Blazing performance for high-stakes problem solvers.',
     specs: ['Apple M3 Chip (8-Core CPU / 10-Core GPU)', 'Liquid Retina 13.6" Display', 'MagSafe 3 & Dual Thunderbolt Ports', 'Official Apple 1-Year Warranty'],
     delivery: 'Ships worldwide via DHL Express with insurance',
   },
@@ -109,7 +111,7 @@ const STORE_PRODUCTS = [
     category: 'tech',
     categoryLabel: 'BIO-READINESS',
     costXP: 18500,
-    emoji: '⌚',
+    icon: Watch,
     color: '#38BDF8',
     stock: 2,
     desc: 'Continuous heart rate metrics, sleep stages, and haptic focus intervals calibrated for peak cognitive endurance.',
@@ -123,8 +125,8 @@ const STORE_PRODUCTS = [
     category: 'tech',
     categoryLabel: 'DEEP FOCUS AUDIO',
     costXP: 16000,
-    emoji: '🎧',
-    color: '#A855F7',
+    icon: Headphones,
+    color: '#0284C7',
     stock: 3,
     desc: 'Silence ambient distractions and lock into pure problem-solving flow. Two processors and 8 microphones.',
     specs: ['Integrated Processor V1 & QN1', 'Multipoint Bluetooth 5.2 Connection', 'Ultra-comfortable Soft Fit Leather', 'Hi-Res Wireless Audio (LDAC)'],
@@ -137,7 +139,7 @@ const STORE_PRODUCTS = [
     category: 'tech',
     categoryLabel: 'DESK ARSENAL',
     costXP: 9500,
-    emoji: '⌨️',
+    icon: Keyboard,
     color: '#FF9500',
     stock: 5,
     desc: 'Heavyweight acoustic gasket design, hot-swappable switches, and tactile response for lightning-fast keystrokes.',
@@ -151,7 +153,7 @@ const STORE_PRODUCTS = [
     category: 'swag',
     categoryLabel: 'DESK COMPANION',
     costXP: 5500,
-    emoji: '☕',
+    icon: Coffee,
     color: '#F59E0B',
     stock: 4,
     desc: 'Maintains your brew at your precise preferred drinking temperature (120°F–145°F) for up to 80 uninterrupted minutes.',
@@ -160,16 +162,16 @@ const STORE_PRODUCTS = [
   },
   {
     id: 'myapt-cyber-hoodie',
-    title: 'MyAptitude Cyber Glyph Hoodie',
+    title: 'MyAptitude Signature Edition Hoodie',
     subtitle: '450 GSM Ultra-Heavyweight Organic Cotton',
     category: 'swag',
     categoryLabel: 'LIMITED MERCH DROP',
     costXP: 4500,
-    emoji: '🧥',
-    color: '#C6FF45',
+    icon: Shirt,
+    color: '#2563EB',
     stock: 12,
     desc: 'Dense brushed fleece with subtle 3D tonal embroidery on chest and hood. Tailored oversize drop-shoulder fit.',
-    specs: ['100% Ring-Spun Organic Cotton 450 GSM', 'Pre-shrunk with Double-Needle Stitching', 'Hidden Kangaroo Device Pocket', 'Exclusive Back Cyber-Coordinate Print'],
+    specs: ['100% Ring-Spun Organic Cotton 450 GSM', 'Pre-shrunk with Double-Needle Stitching', 'Hidden Kangaroo Device Pocket', 'Exclusive Back Coordinate Print'],
     delivery: 'Sizes XS through XXL selected upon redemption',
   },
   {
@@ -179,8 +181,8 @@ const STORE_PRODUCTS = [
     category: 'career',
     categoryLabel: 'CAREER CATALYST',
     costXP: 4000,
-    emoji: '🎓',
-    color: '#EC4899',
+    icon: GraduationCap,
+    color: '#0284C7',
     stock: 8,
     desc: 'Intensive 1-on-1 interview simulation and architectural deep dive with a Senior/Staff Engineer from Google, Meta, or Stripe.',
     specs: ['60-Minute Private Video Call', 'Line-by-line Resume & Portfolio Overhaul', 'Written Feedback Rubric & Action Plan', 'Direct Career Q&A and Referral Advice'],
@@ -193,7 +195,7 @@ const STORE_PRODUCTS = [
     category: 'career',
     categoryLabel: 'TECHNICAL MASTERY',
     costXP: 3800,
-    emoji: '📚',
+    icon: BookOpen,
     color: '#38BDF8',
     stock: 6,
     desc: 'Access the definitive library of programming, architecture, machine learning, and math books with interactive labs.',
@@ -207,7 +209,7 @@ const STORE_PRODUCTS = [
     category: 'swag',
     categoryLabel: 'INSTANT REWARD',
     costXP: 3500,
-    emoji: '💳',
+    icon: CreditCard,
     color: '#22C55E',
     stock: 15,
     desc: 'Instant liquid capital to spend on books, games, cloud compute, or whatever drives your personal journey.',
@@ -221,11 +223,11 @@ const STORE_PRODUCTS = [
     category: 'career',
     categoryLabel: 'PLATFORM ELITE',
     costXP: 2500,
-    emoji: '🚀',
-    color: '#C6FF45',
+    icon: ShieldCheck,
+    color: '#2563EB',
     stock: 99,
-    desc: 'Unlock all adaptive drill modules, deep speed diagnostics, verified profile crown, and priority leaderboard duels.',
-    specs: ['Unlimited Daily Ranked Duels', 'Deep Sub-skill Breakdown Reports', 'Exclusive Gold/Lime Profile Badge', 'Priority Access to New Categories'],
+    desc: 'Unlock all adaptive drill modules, deep speed diagnostics, verified profile crown, and priority leaderboard standings.',
+    specs: ['Unlimited Daily Ranked Assessments', 'Deep Sub-skill Breakdown Reports', 'Exclusive Cobalt Profile Badge', 'Priority Access to New Categories'],
     delivery: 'Instant automatic account upgrade',
   },
 ];
@@ -315,7 +317,7 @@ export default function RedeemStore({ onBack, onStartDrill }) {
 
           <div className="rs-header-title">
             <div className="rs-badge-pulse" />
-            <span>XP REWARDS VAULT</span>
+            <span>REWARDS CENTER</span>
           </div>
 
           <div className="rs-user-balance">
@@ -409,13 +411,18 @@ export default function RedeemStore({ onBack, onStartDrill }) {
                     {prod.categoryLabel}
                   </span>
                   <span className="rs-stock-pill">
-                    {prod.stock === 1 ? '🔥 ONLY 1 LEFT' : `${prod.stock} in stock`}
+                    {prod.stock === 1 ? 'ONLY 1 LEFT' : `${prod.stock} in stock`}
                   </span>
                 </div>
 
                 <div className="rs-card-visual" style={{ '--prod-color': prod.color }}>
                   <div className="rs-visual-ring" />
-                  <span className="rs-visual-emoji">{prod.emoji}</span>
+                  <span className="rs-visual-icon">
+                    {(() => {
+                      const ProdIcon = prod.icon || Gift;
+                      return <ProdIcon size={40} style={{ color: prod.color }} />;
+                    })()}
+                  </span>
                 </div>
 
                 <div className="rs-card-info">
@@ -432,7 +439,7 @@ export default function RedeemStore({ onBack, onStartDrill }) {
                       <strong>{prod.costXP.toLocaleString()} XP</strong>
                     </span>
                     <span className={`rs-progress-pct ${hasEnough ? 'text-lime' : ''}`}>
-                      {hasEnough ? '✓ Ready to Claim!' : `${progress}% (${currentXP}/${prod.costXP})`}
+                      {hasEnough ? 'Ready to Claim!' : `${progress}% (${currentXP}/${prod.costXP})`}
                     </span>
                   </div>
 
@@ -578,7 +585,12 @@ export default function RedeemStore({ onBack, onStartDrill }) {
                 </div>
 
                 <div className="rs-modal-hero-prod">
-                  <span className="rs-modal-emoji">{selectedProduct.emoji}</span>
+                  <span className="rs-modal-icon">
+                    {(() => {
+                      const ModalIcon = selectedProduct.icon || Gift;
+                      return <ModalIcon size={36} style={{ color: selectedProduct.color }} />;
+                    })()}
+                  </span>
                   <div>
                     <h3 className="rs-modal-title">{selectedProduct.title}</h3>
                     <p className="rs-modal-subtitle">{selectedProduct.subtitle}</p>
@@ -618,7 +630,7 @@ export default function RedeemStore({ onBack, onStartDrill }) {
                   <div className="rs-balance-check-row">
                     <span>Status</span>
                     {currentXP >= selectedProduct.costXP ? (
-                      <span className="text-lime font-bold">✓ Sufficient XP to claim</span>
+                      <span className="text-lime font-bold">Sufficient XP to claim</span>
                     ) : (
                       <span className="text-orange font-bold">
                         Need {(selectedProduct.costXP - currentXP).toLocaleString()} more XP

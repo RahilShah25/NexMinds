@@ -1,11 +1,12 @@
 /* ============================================================
-   RedeemStore.css — High-XP Rewards & Tech Gear Vault
+   RedeemStore.css — High-XP Rewards & Tech Gear Center
    ============================================================ */
 
 .redeem-store-page {
   min-height: 100vh;
-  background: #0C0A12;
-  color: #fff;
+  background-color: var(--bg);
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(37, 99, 235, 0.08) 0%, transparent 60%);
+  color: var(--text);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -27,10 +28,10 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(12, 10, 18, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid #1E182B;
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
   padding: 14px 0;
 }
 
@@ -45,19 +46,20 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #171322;
-  border: 1px solid #2B233C;
-  color: #E2DCEF;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
   font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 .rs-back-btn:hover {
-  background: #221C32;
-  border-color: #C6FF4560;
+  background: var(--bg-surface);
+  border-color: var(--accent-border);
   color: #fff;
   transform: translateX(-2px);
 }
@@ -431,7 +433,7 @@
 
 .rs-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #A855F7, #38BDF8);
+  background: linear-gradient(90deg, #2563EB, #38BDF8);
   border-radius: 3px;
   transition: width 0.4s ease;
 }

@@ -6,10 +6,10 @@ import './PracticeModal.css';
 const CAT_META = {
   math:        { label: 'Math Sprint',        icon: FastForward, color: '#FF9500' },
   quantitative:{ label: 'Math Sprint',        icon: FastForward, color: '#FF9500' },
-  puzzle:      { label: 'Pattern Puzzle',     icon: Puzzle,      color: '#A855F7' },
-  pattern:     { label: 'Pattern Puzzle',     icon: Puzzle,      color: '#A855F7' },
-  logic:       { label: 'Logical Reasoning',  icon: Crown,       color: '#C6FF45' },
-  logical:     { label: 'Logical Reasoning',  icon: Crown,       color: '#C6FF45' },
+  puzzle:      { label: 'Pattern Recognition', icon: Puzzle,      color: '#0284C7' },
+  pattern:     { label: 'Pattern Recognition', icon: Puzzle,      color: '#0284C7' },
+  logic:       { label: 'Logical Reasoning',   icon: Crown,       color: '#10B981' },
+  logical:     { label: 'Logical Reasoning',   icon: Crown,       color: '#10B981' },
   memory:      { label: 'Numerical Agility',  icon: Hash,        color: '#38BDF8' },
   numerical:   { label: 'Numerical Agility',  icon: Hash,        color: '#38BDF8' },
 };

@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
-import { X, Share2, Lock, CheckCircle2, Trophy, Zap } from 'lucide-react';
+import { 
+  X, Share2, Lock, CheckCircle2, Trophy, Zap, 
+  Flame, Target, Shield, GraduationCap, Brain, Award, Crown 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './BadgesModal.css';
 
@@ -29,7 +32,7 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
   const [copiedId, setCopiedId] = useState(null);
 
   const currentUser = propUser || authUser || {};
-  const userId = currentUser.id || 'guest';
+  const userId = currentUser.id || 'user';
 
   // Retrieve user quiz stats from localStorage
   const badgeStats = useMemo(() => {
@@ -71,9 +74,9 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
     const list = [
       {
         id: 'first-spark',
-        emoji: '⚡',
+        icon: Zap,
         name: 'First Spark',
-        desc: 'Complete your first practice session in the arena',
+        desc: 'Complete your first practice session on the platform',
         unlocked: sessions >= 1,
         progress: Math.min(sessions, 1),
         total: 1,
@@ -84,7 +87,7 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
       },
       {
         id: 'streak-pioneer',
-        emoji: '🔥',
+        icon: Flame,
         name: 'Streak Pioneer',
         desc: 'Reach an active 3-day consecutive practice streak',
         unlocked: streak >= 3,
@@ -97,7 +100,7 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
       },
       {
         id: 'math-ace',
-        emoji: '🎯',
+        icon: Target,
         name: 'Mental Math Ace',
         desc: 'Score 100% on a Math Sprint drill (or reach 1250+ Math Elo)',
         unlocked: hasMath100,
@@ -105,12 +108,12 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
         total: 1250,
         progressLabel: `${mathRating}/1250 Math Elo`,
         rarity: 'Rare',
-        rarityColor: '#A855F7',
+        rarityColor: '#2563EB',
         xp: 60,
       },
       {
         id: 'consistency-titan',
-        emoji: '🛡️',
+        icon: Shield,
         name: 'Consistency Titan',
         desc: 'Maintain a 7-day consecutive practice streak',
         unlocked: streak >= 7,
@@ -123,20 +126,20 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
       },
       {
         id: 'aptitude-veteran',
-        emoji: '🎓',
+        icon: GraduationCap,
         name: 'Aptitude Veteran',
-        desc: 'Complete 10 total practice drills in the arena',
+        desc: 'Complete 10 total practice drills on the platform',
         unlocked: sessions >= 10,
         progress: Math.min(sessions, 10),
         total: 10,
         progressLabel: `${Math.min(sessions, 10)}/10 drills completed`,
         rarity: 'Rare',
-        rarityColor: '#A855F7',
+        rarityColor: '#0284C7',
         xp: 100,
       },
       {
         id: 'grand-strategist',
-        emoji: '🧠',
+        icon: Brain,
         name: 'Grand Strategist',
         desc: 'Advance any skill rating to 1300+ Elo',
         unlocked: maxRating >= 1300,
@@ -149,7 +152,7 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
       },
       {
         id: 'perfect-run',
-        emoji: '🏆',
+        icon: Award,
         name: 'Flawless Mastery',
         desc: 'Achieve 3 perfect 100% (5/5) quiz scores',
         unlocked: perfectCount >= 3,
@@ -162,9 +165,9 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
       },
       {
         id: 'xp-centurion',
-        emoji: '👑',
+        icon: Crown,
         name: 'XP Centurion',
-        desc: 'Accumulate 500+ total arena XP points',
+        desc: 'Accumulate 500+ total platform XP points',
         unlocked: xp >= 500,
         progress: Math.min(xp, 500),
         total: 500,
@@ -204,7 +207,7 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
   const unlockedCount = badges.filter((b) => b.unlocked).length;
 
   const handleShare = async (badge) => {
-    const text = `🏆 Just unlocked "${badge.name}" on MyAptitude!\n${badge.desc}\n+${badge.xp} XP earned! 🔥`;
+    const text = `Just unlocked "${badge.name}" on MyAptitude!\n${badge.desc}\n+${badge.xp} XP earned!`;
     try {
       if (navigator.share) {
         await navigator.share({ title: 'MyAptitude Achievement', text });
@@ -257,9 +260,12 @@ export default function BadgesModal({ isOpen, onClose, user: propUser }) {
               className={`bm-card ${b.unlocked ? 'bm-card--unlocked' : 'bm-card--locked'}`}
               style={b.unlocked ? { '--rarity': b.rarityColor } : {}}
             >
-              {/* Emoji icon */}
+              {/* Badge icon */}
               <div className="bm-card-icon">
-                <span className="bm-emoji">{b.emoji}</span>
+                {(() => {
+                  const BadgeIcon = b.icon || Award;
+                  return <BadgeIcon size={22} style={{ color: b.rarityColor }} />;
+                })()}
                 {b.unlocked ? (
                   <span className="bm-status-dot bm-status-dot--ok" title="Badge Unlocked">
                     <CheckCircle2 size={11} />

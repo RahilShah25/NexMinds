@@ -5,7 +5,7 @@
  * Powered by client-side PDF.js/JSZip and Gemini Multimodal Visual OCR for scanned documents.
  */
 
-import { ocrMediaWithGemini } from './studyToolsAI.js';
+import { ocrMediaWithGemini, analyzeDiagramWithGemini } from './studyToolsAI.js';
 
 // ─── Base64 & Canvas Helpers ──────────────────────────────────────────────────
 function arrayBufferToBase64(buffer) {
@@ -62,13 +62,13 @@ export function sanitizeDocumentText(text) {
     // 3. Remove Famous textbook author citations often found in syllabus & references
     .replace(/^[^\n]*(?:Silberschatz|Galvin|Gagne|Tanenbaum|Kurose|Ross|Cormen|Leiserson|Rivest|Stein|Pressman|Sommerville|Stallings|Forouzan|Korth|Navathe|Elmasri|Sedgewick|Aho|Ullman|Hopcroft|Patterson|Hennessy|Russell|Norvig|Boylestad|Hayt|Kemmerly|Theraja)[^\n]*$/gim, '')
     // 4. Remove Course Code, Course Title, Subject Name & Department administrative metadata
-    .replace(/^[^\n]*(?:Course\s+Code\s*:|Subject\s+Code\s*:|Paper\s+Code\s*:|Sub\s+Code\s*:|Course\s+Name\s*:|Course\s+Title\s*:|Subject\s+Name\s*:|Subject\s*:\s*[A-Z0-9\s]{3,30}|Name\s+of\s+the\s+Course\s*:|Branch\s*:|Discipline\s*:|Regulation\s*:|Scheme\s*:|Academic\s+Year\s*:|Semester\s*:\s*[IVX\d]+|Credits\s*:\s*\d|L[- ]?T[- ]?P\s*:)[^\n]*$/gim, '')
+    .replace(/^[^\n]*(?:Course\s+Code\s*:|Subject\s+Code\s*:|Paper\s+Code\s*:|Sub\s+Code\s*:|Course\s+Name\s*:|Course\s+Title\s*:|Subject\s+Name\s*:|Subject\s*:\s*[A-Z0-9\s]{3,30}|Name\s+of\s+the\s+Course\s*:|Branch\s*:|Discipline\s*:|Regulation\s*:|Scheme\s*:|Academic\s+Year\s*:|Semester\s*:\s*[IVX\d]+|Credits\s*:\s*\d|L[- ]?T[- ]?P\s*:|\b(?:21CS\d{2}|CS\d{3}|BCS\d{3}|EC\d{3}|ME\d{3})\b)[^\n]*$/gim, '')
     // 5. Remove University / College / Department headers & grading boilerplate
     .replace(/^[^\n]*(?:Institute of Technology|College of Engineering|University|Department of|Affiliated to|Autonomous|Accredited by|Internal Assessment|End Semester Exam|Mid Term Exam|Question Paper Code)[^\n]*$/gim, '')
     // 6. Remove Exam & Syllabus administrative metadata
-    .replace(/^[^\n]*(?:Duration\s*:\s*\d|Max(?:\.|\s+)?Marks\s*:\s*\d|Reg(?:\.|\s+)?No|Roll\s+No)[^\n]*$/gim, '')
+    .replace(/^[^\n]*(?:Duration\s*:\s*\d|Max(?:\.|\s+)?Marks\s*:\s*\d|Reg(?:\.|\s+)?No|Roll\s+No|USN\s*:)[^\n]*$/gim, '')
     // 7. Remove Teacher / Faculty / Author names
-    .replace(/^[^\n]*(?:Prepared\s+by|Faculty\s+Name|Faculty\s*:|Instructor\s*:|Lecturer\s*:|Course\s+Instructor|Authored\s+by|Written\s+by|Teacher\s*:|Guide\s*:|Mentor\s*:|HOD\s*:|Dean\s*:|Prof\.|Professor|Dr\.)\s+[A-Za-z\.\s]{2,40}[^\n]*$/gim, '')
+    .replace(/^[^\n]*(?:Prepared\s+by|Faculty\s+Name|Faculty\s*:|Instructor\s*:|Lecturer\s*:|Course\s+Instructor|Authored\s+by|Written\s+by|Presented\s+by|Author\s*:|Teacher\s*:|Guide\s*:|Mentor\s*:|HOD\s*:|Dean\s*:|Prof\.|Professor|Dr\.)\s+[A-Za-z\.\s]{2,40}[^\n]*$/gim, '')
     // 8. Remove Course Outcomes (CO) & Program Outcomes (PO) tables & statements
     .replace(/^[^\n]*(?:Course\s+Outcome|Program\s+Outcome|Course\s+Objective|Program\s+Specific\s+Outcome|CO[-_ ]?[1-9]|PO[-_ ]?[1-9]|PSO[-_ ]?[1-9]|Bloom(?:'s)?\s+Taxonomy|Bloom\s+Level|CO-PO\s+Mapping|Learning\s+Outcome)[^\n]*$/gim, '')
     // 9. Remove standalone Chapter / Unit / Module markers (e.g. "CHAPTER 1", "UNIT - II", "MODULE 3")
@@ -140,6 +140,7 @@ async function extractFromPDF(file, onProgress) {
   const pdf = await loadingTask.promise;
   const totalPages = pdf.numPages;
   const pagesText = [];
+  const analyzedImages = [];
 
   // For massive PDFs (e.g. > 250 pages), sample pages proportionally across the entire book
   const maxPagesToProcess = 250;
@@ -199,7 +200,35 @@ async function extractFromPDF(file, onProgress) {
         lines.push(lineBuffer.join(' ').trim());
       }
 
-      const cleanPageText = lines.filter(Boolean).join('\n');
+      let cleanPageText = lines.filter(Boolean).join('\n');
+
+      // AI Vision analysis for diagram-rich or slide-like pages in PDF (up to 4 key diagrams)
+      if (cleanPageText.length > 10 && cleanPageText.length < 250 && analyzedImages.length < 4) {
+        try {
+          const jpegDataUrl = await renderPdfPageToJpeg(page, 1.4);
+          if (jpegDataUrl) {
+            const analysis = await analyzeDiagramWithGemini({
+              base64Data: jpegDataUrl,
+              mimeType: 'image/jpeg',
+              contextLabel: `Page ${pageNum} Technical Diagram`,
+              onStatus: (st) => onProgress?.({ percent: pct, message: st }),
+            });
+            if (analysis?.text) {
+              cleanPageText += `\n\n[Page ${pageNum} Visual Diagram Analysis]:\n${analysis.text}`;
+              analyzedImages.push({
+                id: `pdf-page-${pageNum}`,
+                slide: pageNum,
+                name: `Page ${pageNum} Diagram`,
+                dataUrl: jpegDataUrl,
+                description: analysis.text,
+              });
+            }
+          }
+        } catch (diagErr) {
+          console.warn(`[PDF Diagram Analysis] Page ${pageNum} notice:`, diagErr.message);
+        }
+      }
+
       if (cleanPageText.trim()) {
         pagesText.push(`[Page ${pageNum} of ${totalPages}]\n${cleanPageText}`);
       }
@@ -276,6 +305,15 @@ Output ONLY the clean transcribed content.`
             });
             if (pageText && pageText.trim()) {
               ocrPages.push(`[Page ${pNum} of ${totalPages}]\n${pageText.trim()}`);
+              if (analyzedImages.length < 5) {
+                analyzedImages.push({
+                  id: `pdf-scan-page-${pNum}`,
+                  slide: pNum,
+                  name: `Page ${pNum} Scanned Visual`,
+                  dataUrl: jpegDataUrl,
+                  description: pageText.slice(0, 300) + '...',
+                });
+              }
             }
           }
         }
@@ -289,7 +327,7 @@ Output ONLY the clean transcribed content.`
     }
   }
 
-  return { text: sanitizeDocumentText(result), pageCount: totalPages };
+  return { text: sanitizeDocumentText(result), pageCount: totalPages, images: analyzedImages };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -385,14 +423,14 @@ async function extractFromLegacyDOC(file, onProgress) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3. PPTX & PPT TEXT EXTRACTION (Streaming slides, handles 100+ slides)
+// 3. PPTX & PPT TEXT EXTRACTION (Streaming slides, embedded diagram vision)
 // ═══════════════════════════════════════════════════════════════════════════════
 async function extractFromPPTX(file, onProgress) {
   onProgress?.({ percent: 10, message: 'Loading presentation deck...' });
   const arrayBuffer = await file.arrayBuffer();
 
   try {
-    onProgress?.({ percent: 25, message: 'Unpacking slide packages...' });
+    onProgress?.({ percent: 20, message: 'Unpacking slide packages & media assets...' });
     const JSZip = await ensureJSZip();
     const zip = await JSZip.loadAsync(arrayBuffer);
 
@@ -405,13 +443,41 @@ async function extractFromPPTX(file, onProgress) {
         return numA - numB;
       });
 
+    // Map slide index -> associated media files via ppt/slides/_rels/slide{N}.xml.rels
+    const slideMediaMap = new Map();
+    for (let i = 0; i < slideFiles.length; i++) {
+      const slidePath = slideFiles[i];
+      const slideNum = i + 1;
+      const relsPath = slidePath.replace('ppt/slides/slide', 'ppt/slides/_rels/slide') + '.rels';
+      const relsFile = zip.file(relsPath);
+      if (relsFile) {
+        try {
+          const relsXml = await relsFile.async('text');
+          const relRegex = /Target="(?:\.\.\/)?media\/([^"]+)"/gi;
+          let match;
+          const mediaList = [];
+          while ((match = relRegex.exec(relsXml)) !== null) {
+            const fullMediaPath = `ppt/media/${match[1]}`;
+            if (zip.files[fullMediaPath]) {
+              mediaList.push(fullMediaPath);
+            }
+          }
+          if (mediaList.length > 0) {
+            slideMediaMap.set(slideNum, mediaList);
+          }
+        } catch {}
+      }
+    }
+
     if (slideFiles.length > 0) {
       const slidesContent = [];
+      const analyzedImages = [];
+      const MAX_DIAGRAMS_TO_ANALYZE = 8;
 
       for (let i = 0; i < slideFiles.length; i++) {
         const slidePath = slideFiles[i];
         const slideNum = i + 1;
-        const pct = Math.round(25 + ((i + 1) / slideFiles.length) * 70);
+        const pct = Math.round(20 + ((i + 1) / slideFiles.length) * 55);
 
         if (i % 2 === 0 || i === slideFiles.length - 1) {
           onProgress?.({
@@ -469,19 +535,63 @@ async function extractFromPPTX(file, onProgress) {
           }
         }
 
+        // Deep Visual Diagram Analysis for embedded presentation diagrams & schematics
+        let diagramText = '';
+        const slideMedias = slideMediaMap.get(slideNum) || [];
+        for (const mediaPath of slideMedias) {
+          if (analyzedImages.length >= MAX_DIAGRAMS_TO_ANALYZE) break;
+
+          try {
+            const u8 = await zip.files[mediaPath].async('uint8array');
+            // Filter out small icons/logos (< 4KB) so we only analyze meaningful diagrams/flowcharts/charts
+            if (u8.byteLength >= 4096) {
+              const ext = mediaPath.split('.').pop().toLowerCase();
+              const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+              const b64 = arrayBufferToBase64(u8.buffer);
+              const dataUrl = `data:${mime};base64,${b64}`;
+
+              onProgress?.({
+                percent: Math.min(95, pct + 5),
+                message: `Analyzing slide ${slideNum} diagram with Gemini AI Vision...`,
+              });
+
+              const analysis = await analyzeDiagramWithGemini({
+                base64Data: dataUrl,
+                mimeType: mime,
+                contextLabel: `Slide ${slideNum} (${mediaPath.split('/').pop()})`,
+                onStatus: (st) => onProgress?.({ percent: Math.min(95, pct + 5), message: st }),
+              });
+
+              if (analysis?.text) {
+                diagramText += `\n\n[Slide ${slideNum} Visual Diagram Analysis]:\n${analysis.text}\n`;
+                analyzedImages.push({
+                  id: `slide-${slideNum}-img-${analyzedImages.length + 1}`,
+                  slide: slideNum,
+                  name: mediaPath.split('/').pop(),
+                  dataUrl,
+                  description: analysis.text,
+                });
+              }
+            }
+          } catch (diagErr) {
+            console.warn(`[PPTX] Diagram analysis notice for slide ${slideNum}:`, diagErr.message);
+          }
+        }
+
         const titleHeader = slideTitle ? `: ${decodeXmlEntities(slideTitle)}` : '';
-        if (slideLines.length > 0 || slideTitle || notesText) {
+        if (slideLines.length > 0 || slideTitle || notesText || diagramText) {
           slidesContent.push(
-            `[Slide ${slideNum} of ${slideFiles.length}]${titleHeader}\n${slideLines.join('\n')}${notesText}`
+            `[Slide ${slideNum} of ${slideFiles.length}]${titleHeader}\n${slideLines.join('\n')}${notesText}${diagramText}`
           );
         }
       }
 
       if (slidesContent.length > 0) {
-        onProgress?.({ percent: 100, message: 'All slides extracted!' });
+        onProgress?.({ percent: 100, message: 'All slides and visual diagrams analyzed!' });
         return {
-          text: slidesContent.join('\n\n'),
+          text: sanitizeDocumentText(slidesContent.join('\n\n')),
           pageCount: slideFiles.length,
+          images: analyzedImages,
         };
       }
     }
@@ -493,7 +603,7 @@ async function extractFromPPTX(file, onProgress) {
   onProgress?.({ percent: 60, message: 'Parsing legacy PowerPoint binary stream...' });
   const binaryText = extractBinaryStrings(arrayBuffer);
   if (binaryText && binaryText.length > 80) {
-    return { text: binaryText, pageCount: Math.ceil(binaryText.length / 1500) };
+    return { text: sanitizeDocumentText(binaryText), pageCount: Math.ceil(binaryText.length / 1500), images: [] };
   }
 
   throw new Error('Could not extract text from this presentation. Please save it as a modern .pptx file.');
@@ -573,11 +683,11 @@ async function extractFromImage(file, onProgress) {
   else if (name.endsWith('.svg')) mimeType = 'image/svg+xml';
   else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) mimeType = 'image/jpeg';
 
-  onProgress?.({ percent: 35, message: 'Scanning image with AI Visual OCR...' });
-  const { text } = await ocrMediaWithGemini({
+  onProgress?.({ percent: 30, message: 'Transcribing image with AI Visual OCR...' });
+  const { text: ocrText } = await ocrMediaWithGemini({
     base64Data,
     mimeType,
-    onStatus: (msg) => onProgress?.({ percent: 65, message: msg }),
+    onStatus: (msg) => onProgress?.({ percent: 50, message: msg }),
     promptText: `You are an elite academic document and image OCR engine.
 Transcribe all educational and technical text, formulas, equations, data tables, and notes from this image with complete fidelity.
 CRITICAL EXCLUSIONS:
@@ -589,10 +699,41 @@ Focus purely on the core educational concepts, scientific principles, and notes.
 Output ONLY the clean transcribed content without conversational intro or commentary.`
   });
 
-  onProgress?.({ percent: 100, message: 'Image transcribed successfully!' });
+  onProgress?.({ percent: 65, message: 'Analyzing visual diagrams and schematics...' });
+  let diagramAnalysisText = '';
+  try {
+    const analysis = await analyzeDiagramWithGemini({
+      base64Data,
+      mimeType,
+      contextLabel: file.name,
+      onStatus: (msg) => onProgress?.({ percent: 80, message: msg }),
+    });
+    if (analysis?.text) {
+      diagramAnalysisText = analysis.text;
+    }
+  } catch (diagErr) {
+    console.warn('[Image Diagram Analysis] Notice:', diagErr.message);
+  }
+
+  const combined = [
+    ocrText ? `[Transcribed Content]:\n${ocrText}` : '',
+    diagramAnalysisText ? `\n\n[Visual Diagram Analysis]:\n${diagramAnalysisText}` : '',
+  ].filter(Boolean).join('\n\n');
+
+  onProgress?.({ percent: 100, message: 'Image analysis complete!' });
+
   return {
-    text: sanitizeDocumentText(text.trim()),
+    text: sanitizeDocumentText(combined),
     pageCount: 1,
+    images: [
+      {
+        id: 'img-1',
+        slide: 1,
+        name: file.name,
+        dataUrl: base64Data,
+        description: diagramAnalysisText || ocrText || 'Uploaded Image',
+      },
+    ],
   };
 }
 
@@ -648,5 +789,6 @@ export async function extractTextFromFile(file, onProgress) {
     pageCount: result?.pageCount || 1,
     charCount: text.length,
     wordCount: text.split(/\s+/).filter(Boolean).length,
+    images: result?.images || [],
   };
 }
