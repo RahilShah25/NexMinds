@@ -186,6 +186,7 @@ export default function Dashboard({ initialView = 'dashboard' }) {
   // Selected Aptitude category tab (defaults to MATH)
   const [selectedCatId, setSelectedCatId] = useState('math');
   const [isDailyChallengeMode, setIsDailyChallengeMode] = useState(false);
+  const [userAvatarError, setUserAvatarError] = useState(false);
 
   // Live countdown timer for daily event
   const [timeLeft, setTimeLeft] = useState({ hours: 6, minutes: 14, seconds: 32 });
@@ -552,27 +553,17 @@ export default function Dashboard({ initialView = 'dashboard' }) {
                 aria-label="Open Profile Drawer"
               >
                 <div className="avatar-circle">
-                  {user?.avatar && user.avatar.startsWith('http') ? (
+                  {user?.avatar && user.avatar.startsWith('http') && !userAvatarError ? (
                     <img
                       src={user.avatar}
                       alt={userName}
                       className="header-avatar-img"
                       referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const fallback = e.currentTarget.parentElement.querySelector('.avatar-initial-fallback');
-                        if (fallback) fallback.style.display = 'flex';
-                      }}
+                      onError={() => setUserAvatarError(true)}
                     />
-                  ) : null}
-                  <span
-                    className="avatar-initial-fallback"
-                    style={{
-                      display: user?.avatar && user.avatar.startsWith('http') ? 'none' : 'flex'
-                    }}
-                  >
-                    {userInitial}
-                  </span>
+                  ) : (
+                    <span className="avatar-initial-fallback">{userInitial}</span>
+                  )}
                   <span className="online-beacon" />
                 </div>
                 <div className="desktop-user-meta desktop-only">
@@ -602,27 +593,19 @@ export default function Dashboard({ initialView = 'dashboard' }) {
               title={`View Profile • ${userName}`}
             >
               <div className="user-ring-circle">
-                {user?.avatar && user.avatar.startsWith('http') ? (
-                  <img
-                    src={user.avatar}
-                    alt={userName}
-                    className="user-ring-avatar-img"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.parentElement.querySelector('.user-avatar-initial-fallback');
-                      if (fallback) fallback.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <span
-                  className="user-avatar-initial-fallback"
-                  style={{
-                    display: user?.avatar && user.avatar.startsWith('http') ? 'none' : 'flex'
-                  }}
-                >
-                  {userInitial}
-                </span>
+                <div className="user-ring-inner">
+                  {user?.avatar && user.avatar.startsWith('http') && !userAvatarError ? (
+                    <img
+                      src={user.avatar}
+                      alt={userName}
+                      className="user-ring-avatar-img"
+                      referrerPolicy="no-referrer"
+                      onError={() => setUserAvatarError(true)}
+                    />
+                  ) : (
+                    <span className="user-avatar-initial-fallback">{userInitial}</span>
+                  )}
+                </div>
                 <span className="user-active-dot" />
               </div>
               <span className="story-label you-story-label">YOU</span>
@@ -639,19 +622,21 @@ export default function Dashboard({ initialView = 'dashboard' }) {
                 title={`View ${peer.name || 'Contender'} • ${peer.xp || 0} XP`}
               >
                 <div className="friend-ring-circle">
-                  {peer.avatar && peer.avatar.startsWith('http') ? (
-                    <img
-                      src={peer.avatar}
-                      alt={peer.name}
-                      className="friend-avatar-img"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span>{(peer.name || 'P').substring(0, 2).toUpperCase()}</span>
-                  )}
+                  <div className="friend-ring-inner">
+                    {peer.avatar && peer.avatar.startsWith('http') ? (
+                      <img
+                        src={peer.avatar}
+                        alt={peer.name}
+                        className="friend-avatar-img"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span>{(peer.name || 'P').substring(0, 2).toUpperCase()}</span>
+                    )}
+                  </div>
                   <span className="friend-online-dot" />
                 </div>
                 <span className="story-label">{peer.name?.split(' ')[0]?.toUpperCase() || 'PLAYER'}</span>

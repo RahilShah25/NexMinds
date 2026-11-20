@@ -344,6 +344,18 @@
   box-shadow: 0 0 16px rgba(37, 99, 235, 0.45);
 }
 
+.user-ring-inner,
+.friend-ring-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card-solid);
+}
+
 .daily-ring-circle {
   width: 54px;
   height: 54px;
@@ -375,26 +387,25 @@
 
 /* User avatar initial fallback inside story circle */
 .user-avatar-initial-fallback {
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: 50% !important;
-  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
-  color: #FFFFFF !important;
-  font-family: var(--font-heading) !important;
-  font-weight: 800 !important;
-  font-size: 1.25rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.02em !important;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.25) !important;
-  user-select: none !important;
-  line-height: 1 !important;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%);
+  color: #FFFFFF;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
+  user-select: none;
+  line-height: 1;
 }
 
-.user-ring-circle span:not(.user-avatar-initial-fallback):not(.user-active-dot),
-.friend-ring-circle span:not(.friend-online-dot) {
+.friend-ring-inner span {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -428,9 +439,10 @@
   background: #10B981 !important;
   border: 2px solid var(--bg) !important;
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.6) !important;
-  z-index: 2 !important;
+  z-index: 5 !important;
   margin: 0 !important;
   padding: 0 !important;
+  pointer-events: none;
 }
 
 .story-label {
